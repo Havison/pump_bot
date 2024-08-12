@@ -162,3 +162,5 @@ cython_debug/
 
 !/tests/
 !/manual director and files
+!/users.sql
+!/users.sql
