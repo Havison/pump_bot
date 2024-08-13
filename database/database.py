@@ -1,16 +1,15 @@
-import sqlite3 as sq
-
-db = sq.connect('database/database.db')
-cur = db.cursor()
+import datetime
+import aiosqlite
 
 
 async def db_start():
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-        tg_id INTEGER PRIMARY KEY,
-        username TEXT,
-        first_name TEXT,
-        last_name TEXT,
+    async with aiosqlite.connect('database/database.db') as db:
+        async with db.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+            tg_id INTEGER PRIMARY KEY,
+            username TEXT,
+            first_name TEXT,
+            last_name TEXT,
         date_of_start TEXT
         )
         ''')
@@ -36,7 +35,17 @@ async def db_start():
         symbol TEXT,
         lastPrice TEXT,
         openInterest TEXT,
-        volume TEXT
+        volume TEXT,
+        date_lp TEXT
+        )
+        ''')
+    db.commit()
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS symbol_users (
+        tg_id INTEGER,
+        symbol TEXT,
+        date_sgnl TEXT
         )
         ''')
     db.commit()
@@ -49,26 +58,26 @@ def db_bybit_smbl(symbol):
         db.commit()
 
 
-def db_bybit(symbol, lastPrice, openInterest, volume):
+def db_bybit(symbol, lp, oi, vlm):
     cur.execute('''SELECT COUNT(*) FROM bybit WHERE symbol=?''',(symbol,))
     count = cur.fetchone()[0]
     if count > 4800:
         cur.execute('''DELETE FROM bybit WHERE symbol={key} ORDER BY ROWID LIMIT 1'''.format(key=symbol))
     cur.execute('''INSERT INTO bybit(
-    symbol, lastPrice, openInterest, volume) VALUES (
-    ?, ?, ?, ?)''', (
-        symbol, lastPrice, openInterest, volume))
+    symbol, lastPrice, openInterest, volume, date_lp) VALUES (
+    ?, ?, ?, ?, datetime('now'))''', (
+        symbol, lp, oi, vlm))
     db.commit()
 
 
-async def db_create_user(tg_id, username, first_name, last_name, date_of_start):
+async def db_create_user(tg_id, username, first_name, last_name):
     result = cur.execute('''SELECT 1 FROM users WHERE tg_id={key}'''.format(key=tg_id)).fetchone()
     if result is None:
         cur.execute('''INSERT INTO users (
         tg_id, username, first_name, last_name, date_of_start) 
         VALUES (
-        ?, ?, ?, ?, ?)''', (
-            tg_id, username, first_name, last_name, date_of_start)
+        ?, ?, ?, ?, datetime('now'))''', (
+            tg_id, username, first_name, last_name)
                     )
         cur.execute('''INSERT INTO long (
         tg_id, changes_long, interval_long
@@ -111,8 +120,21 @@ async def db_interval_short(tg_id, interval_short):
 
 
 async def db_result_short(tg_id):
-    result = cur.execute('''SELECT changes_short, interval_short FROM short WHERE tg_id={key}'''.format(key=tg_id)).fetchone()
+    result = cur.execute('''SELECT changes_short, interval_short FROM short WHERE tg_id=?''', (tg_id,)).fetchone()
     return result
+
+
+async def user_id():
+    result = cur.execute('''SELECT tg_id, date_of_start FROM users''').fetchall()
+    return result
+
+
+async def long_interval_user(interval_long, symbol):
+    added_date = datetime.datetime.now() - datetime.timedelta(minutes=1)
+    return cur.execute('''SELECT lastPrice FROM bybit WHERE symbol=? and date_lp>? ORDER BY date_lp DESC LIMIT 1''', (symbol, added_date)).fetchone()
+
+
+
 
 
 

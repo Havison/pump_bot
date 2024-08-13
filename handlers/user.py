@@ -33,7 +33,7 @@ keyboard_button = ReplyKeyboardMarkup(keyboard=[[button_1, button_2, button_3]],
 @router.message(CommandStart(), StateFilter(default_state)) # Этот хэндлер срабатывает на команду /start
 async def process_start_command(message: Message):
     await db.db_create_user(message.from_user.id, message.from_user.username, message.from_user.first_name,
-                            message.from_user.last_name, datetime.datetime.now())
+                            message.from_user.last_name)
     await message.answer(text=LEXICON['/start'],
                          reply_markup=keyboard_button)
 
@@ -69,7 +69,7 @@ async def process_long_press(callback_query: CallbackQuery, state: FSMContext):
                 lambda x: x.text.isdigit() and 1 <= int(x.text) <= 9999)
 async def long_setting_changes(message: Message, state: FSMContext):
     await db.db_changes_long(message.from_user.id, int(message.text))
-    await message.answer(text=LEXICON_TEXT['long_setting_changes'])
+    await message.answer(text=LEXICON_TEXT['setting_interval'])
     await state.set_state(FSMLongSort.interval_long)
 
 
@@ -78,7 +78,9 @@ async def long_setting_changes(message: Message, state: FSMContext):
 async def long_setting_interval(message: Message, state: FSMContext):
     await db.db_interval_long(message.from_user.id, int(message.text))
     x = await db.db_result_long(message.from_user.id)
-    await message.answer(text=LEXICON_TEXT['new_setting'].format(changes_long=x[0], interval_long=x[1]))
+    y = await db.db_result_short(message.from_user.id)
+    await message.answer(text=LEXICON_TEXT['new_setting'].format(changes_long=x[0], interval_long=x[1],
+                                                                 changes_short=y[0], interval_short=y[1]))
     await state.clear()
 
 
@@ -98,9 +100,9 @@ async def process_short_press(callback_query: CallbackQuery, state: FSMContext):
 
 
 @router.message(StateFilter(FSMLongSort.changes_short),
-                lambda x: isinstance(x.text, int) and -1 >= int(x.text) >= -9999)
+                lambda x: x.text.isdigit() and 1 <= int(x.text) <= 9999)
 async def short_setting_changes(message: Message, state: FSMContext):
-    await db.db_changes_short(message.from_user.id, int(message.text))
+    await db.db_changes_short(message.from_user.id, int('-'+message.text))
     await message.answer(text=LEXICON_TEXT['setting_interval'])
     await state.set_state(FSMLongSort.interval_short)
 
@@ -133,6 +135,7 @@ async def process_chanel_press(callback_query: CallbackQuery, state: FSMContext)
     await state.clear()
     await callback_query.message.answer(
         text=LEXICON_TEXT['chanel'])
+
 
 
 
