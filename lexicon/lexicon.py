@@ -1,7 +1,6 @@
 LEXICON: dict[str, str] = {'LONG': '🔧ПАМП 🟢',
                            'SHORT': '🔧ДАМП 🔴',
                            'CHANEL': '❌ОТМЕНА❌',
-                           'QUANTITY': 'Количество сигналов по монете',
                            '/start': '<b>📉Приветствую, я бот-скринер, '
                                      'который сообщает об изменении цены</b>📈\n\n'
                                      '🛠Доступны две настройки🛠:\n\n'
@@ -14,11 +13,6 @@ LEXICON: dict[str, str] = {'LONG': '🔧ПАМП 🟢',
                            '/help': 'Помощь',
                            '/setting': '🔧Настройки',
                            '/profile': 'Профиль',
-                           '/pump': '🔧ПАМП 🟢',
-                           '/dump': '🔧ДАМП 🔴',
-                           '/quantity': 'Кол-во сигналов 🧿',
-                           '/back': 'Назад',
-                           '/chanel': 'Отмена настройки ❌',
                            'interval': 'Период 🕧',
                            'changes': 'Рост 💹'
                            }
@@ -43,7 +37,7 @@ LEXICON_TEXT: dict[str, str] = {'setting_text':'🔧Настройки 🟢ПА�
                                 'new_setting': 'Настройки 🟢ПАМП сигналов изменены, текущие настройки:\n\n'
              'ПАМП: {changes_long} % за {interval_long} минут 🟢\n\n'
              'ДАМП: {changes_short} % за {interval_short} минут 🔴\n\n',
-                                'chanel': '❌Настройки отменены❌'}
+                                'chanel': 'Настройки отменены'}
 
 LEXICON_COMMANDS_RU: dict[str, str] = {
     '/start': 'Запуск бота',
