@@ -1,9 +1,10 @@
 from pybit.unified_trading import HTTP
-import humanize
 from config_data.config import Config, load_config
-from database.database import db_bybit_smbl, db_bybit, user_id, db_result_long, db_result_short, long_interval_user
+from database.database import db_bybit_smbl, user_id, db_result_long, db_result_short, long_interval_user, db_bybit
 import datetime
-_i = humanize.i18n.activate('ru_RU')
+from handlers.user import message_long, message_short
+
+
 
 config: Config = load_config('.env')
 
@@ -17,16 +18,28 @@ session = HTTP(
 async def symbol_bybit():
     data = session.get_tickers(category="linear")
     for dicts in data['result']['list']:
-        db_bybit_smbl(dicts['symbol'])
-        db_bybit(dicts['symbol'], dicts['lastPrice'], dicts['openInterest'], dicts['volume24h'])
+        await db_bybit_smbl(dicts['symbol'])
+        await db_bybit(dicts['symbol'], dicts['lastPrice'], dicts['openInterest'], dicts['volume24h'])
         last_price = dicts["lastPrice"]
         user = await user_id()
         tg_id = [i[0] for i in user]
         for idt in tg_id:
             changes_long, interval_long = await db_result_long(idt)
             changes_short, interval_short = await db_result_short(idt)
-            r = await long_interval_user(interval_long, dicts['symbol'])
-            print(r)
+            user_price_interval_a = await long_interval_user(interval_long, dicts['symbol'])
+            user_price_interval_b = await long_interval_user(interval_short, dicts['symbol'])
+            for i in user_price_interval_a:
+                a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+                if a > changes_long:
+                    await message_long(idt, a, dicts['symbol'], interval_long)
+            for i in user_price_interval_b:
+                b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+                if b < changes_short:
+                    await message_short(idt, b, dicts['symbol'], interval_short)
+
+
+
+
 
 
 

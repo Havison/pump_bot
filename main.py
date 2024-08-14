@@ -21,6 +21,7 @@ async def countinues_taks():
         await symbol_bybit()
         await asyncio.sleep(3)
 
+
 async def main():
     # Конфигурируем логирование
     logging.basicConfig(
@@ -44,13 +45,18 @@ async def main():
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
+
     await set_main_menu(bot)
     await db_start()
     dp.include_router(user.router)
 
+
+
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=[])
+
+
 
 
 asyncio.run(main())
