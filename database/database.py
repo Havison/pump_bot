@@ -45,7 +45,6 @@ async def db_start():
             CREATE TABLE IF NOT EXISTS quantity_signal (
             tg_id INTEGER,
             symbol TEXT,
-            qnt INTEGER,
             date_sgnl TEXT
             )
             ''') as cursor: pass
@@ -96,6 +95,8 @@ async def db_create_user(tg_id, username, first_name, last_name):
             VALUES (?, ?, ?)''', (
                 tg_id, -10, 30)
                              )
+            await db.execute('''INSERT INTO quantity_user 
+            (tg_id, quantity_setting, quantity_interval) VALUES (?,?,?)''', (tg_id, 1, 30))
             await db.commit()
 
 
@@ -109,6 +110,25 @@ async def db_interval_long(tg_id, interval_long):
     async with aiosqlite.connect('database/database.db') as db:
         await db.execute('''UPDATE long SET interval_long=? WHERE tg_id=?''', (interval_long, tg_id))
         await db.commit()
+
+
+async def db_quantity_setting(tg_id, quantity_setting):
+    async with aiosqlite.connect('database/database.db') as db:
+        await db.execute('''UPDATE quantity_user SET quantity_setting=? WHERE tg_id=?''', (quantity_setting, tg_id))
+        await db.commit()
+
+
+async def db_quantity_interval(tg_id, quantity_interval):
+    async with aiosqlite.connect('database/database.db') as db:
+        await db.execute('''UPDATE quantity_user SET quantity_interval=? WHERE tg_id=?''', (quantity_interval, tg_id))
+        await db.commit()
+
+
+async def db_quantity_selection(tg_id):
+    async with aiosqlite.connect('database/database.db') as db:
+        result = await db.execute('''SELECT quantity_setting, quantity_interval FROM quantity_user WHERE tg_id=?''', (tg_id, ))
+        result = await result.fetchone()
+        return result
 
 
 async def db_result_long(tg_id):
@@ -155,14 +175,47 @@ async def long_interval_user(interval_long, symbol):
         return result
 
 
-async def quantity(tg_id, symbol, qnt):
+async def quantity(tg_id, symbol):
     async with aiosqlite.connect('database/database.db') as db:
         symbol_signal = await db.execute('''SELECT 1 FROM quantity_signal WHERE tg_id=? and symbol=?''', (tg_id, symbol))
         symbol_signal = await symbol_signal.fetchone()
+        quantity_tg_ig = await db.execute('''SELECT quantity_setting, quantity_interval FROM 
+                quantity_user WHERE tg_id = ?''', (tg_id,))
+        quantity_tg_ig = await quantity_tg_ig.fetchone()
+        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=quantity_tg_ig[1])
+        dt_base = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=30)
+        quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
+        (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt))
+        quantity_count = await quantity_count.fetchone()
+        quantity_count_base = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
+                (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt_base))
+        quantity_count_base = await quantity_count_base.fetchone()
         if symbol_signal is None:
-            await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl) VALUES (?, ?, datetime('now'))''', (tg_id, symbol))
+            await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl) VALUES (
+            ?, ?, datetime('now'))''', (tg_id, symbol))
             await db.commit()
+            return True
+        elif quantity_count[0] < quantity_tg_ig[0]:
+            if quantity_count_base[0] < 1:
+                await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl) 
+                VALUES (?, ?, datetime('now'))''', (tg_id, symbol))
+                await db.commit()
+                return True
+        else:
+            return False
 
+
+async def clear_quantity_signal(tg_id, symbol):
+    async with aiosqlite.connect('database/database.db') as db:
+        dt_cl = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1440)
+        quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
+                (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt_cl))
+        quantity_count = await quantity_count.fetchone()
+        await db.execute('''DELETE FROM quantity_signal WHERE (
+        tg_id=? and symbol=? and date_sgnl<?)''',
+                         (tg_id, symbol, dt_cl))
+        await db.commit()
+        return quantity_count[0]
 
 
 

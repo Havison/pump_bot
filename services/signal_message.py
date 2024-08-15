@@ -1,6 +1,10 @@
+import time
+
 from pybit.unified_trading import HTTP
 from config_data.config import Config, load_config
-from database.database import db_bybit_smbl, user_id, db_result_long, db_result_short, long_interval_user, db_bybit
+from database.database import (db_bybit_smbl, user_id, db_result_long, db_result_short,
+                               long_interval_user, db_bybit, quantity, clear_quantity_signal,
+                               db_quantity_selection)
 import datetime
 from handlers.user import message_long, message_short
 
@@ -31,11 +35,23 @@ async def symbol_bybit():
             for i in user_price_interval_a:
                 a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
                 if a > changes_long:
-                    await message_long(idt, a, dicts['symbol'], interval_long)
+                    if await quantity(idt, dicts['symbol']):
+                        q = await clear_quantity_signal(idt, dicts['symbol'])
+                        qi = await db_quantity_selection(idt)
+                        qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                        await message_long(idt, a, dicts['symbol'], interval_long, q, qi_text[qi[1]])
             for i in user_price_interval_b:
                 b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
                 if b < changes_short:
-                    await message_short(idt, b, dicts['symbol'], interval_short)
+                    if await quantity(idt, dicts['symbol']):
+                        q = await clear_quantity_signal(idt, dicts['symbol'])
+                        qi = await db_quantity_selection(idt)
+                        qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                        await message_short(idt, b, dicts['symbol'], interval_short, q, qi_text[qi[1]])
+
+
+
+
 
 
 
