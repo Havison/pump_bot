@@ -76,35 +76,43 @@ async def process_help_command(message: Message):
 
 @router.message(Command(commands='reset'), StateFilter(default_state))
 async def process_reset_command(message: Message):
-    await db.db_changes_long(message.from_user.id, 10)
-    await db.db_changes_short(message.from_user.id, -10)
-    await db.db_interval_long(message.from_user.id, 30)
-    await db.db_interval_short(message.from_user.id, 30)
-    await message.answer(text=LEXICON_TEXT['new_setting_no_limited'].format(changes_long='10', interval_long='30',
-                                                                   changes_short='-10', interval_short='30'))
+    prm_date = await db.premium_user(message.from_user.id)
+    if not prm_date:
+        await message.answer(text=LEXICON_TEXT['fail_premium'])
+    else:
+        await db.db_changes_long(message.from_user.id, 10)
+        await db.db_changes_short(message.from_user.id, -10)
+        await db.db_interval_long(message.from_user.id, 30)
+        await db.db_interval_short(message.from_user.id, 30)
+        await message.answer(text=LEXICON_TEXT['new_setting_no_limited'].format(changes_long='10', interval_long='30',
+                                                                       changes_short='-10', interval_short='30'))
 
 
 @router.message(F.text == LEXICON['/setting'], StateFilter(default_state))
 @router.message(Command(commands='setting'),
                 StateFilter(default_state))  # Этот хэндлер срабатывает на команду /setting
 async def process_settings_command(message: Message):
-    x = await db.db_result_long(message.from_user.id)
-    y = await db.db_result_short(message.from_user.id)
-    qs = await db.db_quantity_selection(message.from_user.id)
-    hours_text = {30: 'часа', 360: 'часов', 720: 'часов', 1440: 'часа'}
-    if qs[1] == 30:
-        await message.answer(text=LEXICON_TEXT['setting_text_start'].format(changes_long=x[0], interval_long=x[1],
-                                                                            changes_short=y[0], interval_short=y[1]),
-                             reply_markup=keyboard_button_setting)
+    prm_date = await db.premium_user(message.from_user.id)
+    if not prm_date:
+        await message.answer(text=LEXICON_TEXT['fail_premium'])
     else:
-        await message.answer(text=LEXICON_TEXT['setting_text'].format(changes_long=x[0],
-                                                                      interval_long=x[1],
-                                                                      changes_short=y[0],
-                                                                      interval_short=y[1],
-                                                                      quantity_setting=qs[0],
-                                                                      quantity_interval=int(qs[1] / 60),
-                                                                      hours_text=hours_text[qs[1]]),
-                             reply_markup=keyboard_button_setting)
+        x = await db.db_result_long(message.from_user.id)
+        y = await db.db_result_short(message.from_user.id)
+        qs = await db.db_quantity_selection(message.from_user.id)
+        hours_text = {30: 'часа', 360: 'часов', 720: 'часов', 1440: 'часа'}
+        if qs[1] == 30:
+            await message.answer(text=LEXICON_TEXT['setting_text_start'].format(changes_long=x[0], interval_long=x[1],
+                                                                                changes_short=y[0], interval_short=y[1]),
+                                 reply_markup=keyboard_button_setting)
+        else:
+            await message.answer(text=LEXICON_TEXT['setting_text'].format(changes_long=x[0],
+                                                                          interval_long=x[1],
+                                                                          changes_short=y[0],
+                                                                          interval_short=y[1],
+                                                                          quantity_setting=qs[0],
+                                                                          quantity_interval=int(qs[1] / 60),
+                                                                          hours_text=hours_text[qs[1]]),
+                                 reply_markup=keyboard_button_setting)
 
 
 @router.message(F.text == LEXICON['/pump'], StateFilter(default_state))
@@ -181,7 +189,8 @@ async def long_setting_interval(message: Message, state: FSMContext):
                                                                                changes_short=y[0], interval_short=y[1]),
                              reply_markup=keyboard_button)
 
-    await message.answer(text=LEXICON_TEXT['new_setting'].format(changes_long=x[0], interval_long=x[1],
+    else:
+        await message.answer(text=LEXICON_TEXT['new_setting'].format(changes_long=x[0], interval_long=x[1],
                                                                  changes_short=y[0], interval_short=y[1],
                                                                  quantity_setting=qs[0],
                                                                  quantity_interval=int(qs[1] / 60),
@@ -255,7 +264,8 @@ async def quantity_setting(message: Message, state: FSMContext):
                                                                                 interval_short=y[1]),
                              reply_markup=keyboard_button)
 
-    await message.answer(text=LEXICON_TEXT['quantity_on_limited'].format(changes_long=x[0], interval_long=x[1],
+    else:
+        await message.answer(text=LEXICON_TEXT['quantity_on_limited'].format(changes_long=x[0], interval_long=x[1],
                                                                          changes_short=y[0], interval_short=y[1],
                                                                          quantity_setting=qs[0],
                                                                          quantity_interval=int(qs[1] / 60),
@@ -282,24 +292,20 @@ async def time_premium(message: Message):
 async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
-    binance = f'https://www.binance.com/ru/futures/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]} (изменения за {interval} минут)</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{binance}\">ByBit</a>'
-                                               f' | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
 async def message_short(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
-    binance = f'https://www.binance.com/ru/futures/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]} (изменения за {interval} минут)</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{binance}\">ByBit</a>'
-                                               f' | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 

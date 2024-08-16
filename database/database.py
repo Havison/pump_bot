@@ -10,7 +10,9 @@ async def db_start():
             username TEXT,
             first_name TEXT,
             last_name TEXT,
-            date_of_start TEXT
+            date_of_start TEXT,
+            binance INTEGER,
+            bybit INTEGER
             )
             ''') as cursor: pass
 
@@ -78,9 +80,9 @@ async def db_create_user(tg_id, username, first_name, last_name):
         result = await result.fetchone()
         if result is None:
             await db.execute('''INSERT INTO users (
-            tg_id, username, first_name, last_name, date_of_start) 
+            tg_id, username, first_name, last_name, date_of_start, binance, bybit) 
             VALUES (
-            ?, ?, ?, ?, datetime('now', '+1 days'))''', (
+            ?, ?, ?, ?, datetime('now', '+1 days')), 1, 1''', (
                 tg_id, username, first_name, last_name)
                              )
             await db.execute('''INSERT INTO long (
@@ -170,7 +172,7 @@ async def long_interval_user(interval_long, symbol):
     async with aiosqlite.connect('database/database.db') as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
         result = await db.execute('''SELECT lastPrice FROM bybit WHERE symbol=? and 
-        date_lp<? ORDER BY date_lp''', (symbol, added_date))
+        date_lp>? ORDER BY date_lp''', (symbol, added_date))
         result = await result.fetchall()
         return result
 
