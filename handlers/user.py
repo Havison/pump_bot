@@ -175,7 +175,7 @@ async def long_setting_interval(message: Message, state: FSMContext):
     x = await db.db_result_long(message.from_user.id)
     y = await db.db_result_short(message.from_user.id)
     qs = await db.db_quantity_selection(message.from_user.id)
-    hours_text = {360: 'часов', 720: 'часов', 1440: 'часа'}
+    hours_text = {30: 'часа', 360: 'часов', 720: 'часов', 1440: 'часа'}
     if qs[1] == 30:
         await message.answer(text=LEXICON_TEXT['new_setting_no_limited'].format(changes_long=x[0], interval_long=x[1],
                                                                                changes_short=y[0], interval_short=y[1]),
@@ -248,7 +248,7 @@ async def quantity_setting(message: Message, state: FSMContext):
     x = await db.db_result_long(message.from_user.id)
     y = await db.db_result_short(message.from_user.id)
     qs = await db.db_quantity_selection(message.from_user.id)
-    hours_text = {360: 'часов', 720: 'часов', 1440: 'часа'}
+    hours_text = {30: 'часа', 360: 'часов', 720: 'часов', 1440: 'часа'}
     if qs[1] == 30:
         await message.answer(text=LEXICON_TEXT['new_setting_no_limited'].format(changes_long=x[0], interval_long=x[1],
                                                                                 changes_short=y[0],
