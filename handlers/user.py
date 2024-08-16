@@ -270,29 +270,36 @@ async def quantity_warning(message: Message):
     await message.answer(text=LEXICON_TEXT['quantity_warning'])
 
 
-@router.message(F.text == LEXICON['/help'], StateFilter(StateFilter(default_state)))
-@router.message(Command(commands='setting'), StateFilter(StateFilter(default_state)))
-async def not_premium(message: Message):
+@router.message(F.text == LEXICON['/profile'], StateFilter(default_state))
+@router.message(Command(commands='profile'), StateFilter(default_state))
+async def time_premium(message: Message):
     prm_date = await db.premium_user(message.from_user.id)
-    await message.answer(text=LEXICON_TEXT['not_premium'].format(prm_date=prm_date))
+    if not prm_date:
+        await message.answer(text=LEXICON_TEXT['fail_premium'])
+    else:
+        await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date[0]))
 
 async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]} (изменения за {interval} минут)</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{binance}\">ByBit</a>'
+                                               f' | <a href=\"{coinglass}\">CoinGlass</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
 async def message_short(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]} (изменения за {interval} минут)</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{binance}\">ByBit</a>'
+                                               f' | <a href=\"{coinglass}\">CoinGlass</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
