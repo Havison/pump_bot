@@ -36,7 +36,7 @@ async def symbol_bybit():
             for i in user_price_interval_a:
                 a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
                 if a > changes_long:
-                    if await quantity(idt, dicts['symbol']):
+                    if await quantity(idt, dicts['symbol'], interval_long):
                         q = await clear_quantity_signal(idt, dicts['symbol'])
                         qi = await db_quantity_selection(idt)
                         qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
@@ -44,7 +44,7 @@ async def symbol_bybit():
             for i in user_price_interval_b:
                 b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
                 if b < changes_short:
-                    if await quantity(idt, dicts['symbol']):
+                    if await quantity(idt, dicts['symbol'], interval_short):
                         q = await clear_quantity_signal(idt, dicts['symbol'])
                         qi = await db_quantity_selection(idt)
                         qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}

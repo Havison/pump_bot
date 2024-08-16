@@ -177,7 +177,7 @@ async def long_interval_user(interval_long, symbol):
         return result
 
 
-async def quantity(tg_id, symbol):
+async def quantity(tg_id, symbol, interval_user):
     async with aiosqlite.connect('database/database.db') as db:
         symbol_signal = await db.execute('''SELECT 1 FROM quantity_signal WHERE tg_id=? and symbol=?''', (tg_id, symbol))
         symbol_signal = await symbol_signal.fetchone()
@@ -185,7 +185,7 @@ async def quantity(tg_id, symbol):
                 quantity_user WHERE tg_id = ?''', (tg_id,))
         quantity_tg_ig = await quantity_tg_ig.fetchone()
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=quantity_tg_ig[1])
-        dt_base = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=30)
+        dt_base = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_user+1)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
         (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt))
         quantity_count = await quantity_count.fetchone()
