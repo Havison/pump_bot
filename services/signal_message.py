@@ -1,11 +1,9 @@
-import time
-
 from pybit.unified_trading import HTTP
 from config_data.config import Config, load_config
 from database.database import (db_bybit_smbl, user_id, db_result_long, db_result_short,
                                long_interval_user, db_bybit, quantity, clear_quantity_signal,
-                               db_quantity_selection)
-import datetime
+                               db_quantity_selection, premium_user)
+
 from handlers.user import message_long, message_short
 
 
@@ -28,6 +26,9 @@ async def symbol_bybit():
         user = await user_id()
         tg_id = [i[0] for i in user]
         for idt in tg_id:
+            premium = await premium_user(idt)
+            if not premium:
+                continue
             changes_long, interval_long = await db_result_long(idt)
             changes_short, interval_short = await db_result_short(idt)
             user_price_interval_a = await long_interval_user(interval_long, dicts['symbol'])

@@ -80,7 +80,7 @@ async def db_create_user(tg_id, username, first_name, last_name):
             await db.execute('''INSERT INTO users (
             tg_id, username, first_name, last_name, date_of_start) 
             VALUES (
-            ?, ?, ?, ?, datetime('now'))''', (
+            ?, ?, ?, ?, datetime('now', '+1 days'))''', (
                 tg_id, username, first_name, last_name)
                              )
             await db.execute('''INSERT INTO long (
@@ -216,6 +216,32 @@ async def clear_quantity_signal(tg_id, symbol):
                          (tg_id, symbol, dt_cl))
         await db.commit()
         return quantity_count[0]
+
+
+async def premium_user(tg_id): #функция проверяет на подписку
+    async with aiosqlite.connect('database/database.db') as db:
+        today = datetime.datetime.now(datetime.timezone.utc)
+        premium = await db.execute('''SELECT date_of_start FROM users WHERE (tg_id=? and date_of_start>?)''', (tg_id, today))
+        premium = await premium.fetchone()
+        if premium is None:
+            return False
+        else:
+            return premium
+
+
+async def premium_setting(tg_id, days):
+    if days == '1':
+        async with aiosqlite.connect('database/database.db') as db:
+            await db.execute('''UPDATE users SET date_of_start=datetime(datetime('now'), '+1 days') WHERE (tg_id=?)''', (tg_id, ))
+            await db.commit()
+    if days == '10':
+        async with aiosqlite.connect('database/database.db') as db:
+            await db.execute('''UPDATE users SET date_of_start=datetime(datetime('now'), '+10 days') WHERE (tg_id=?)''', (tg_id, ))
+            await db.commit()
+    if days == '30':
+        async with aiosqlite.connect('database/database.db') as db:
+            await db.execute('''UPDATE users SET date_of_start=datetime(datetime('now'), '+30 days') WHERE (tg_id=?)''', (tg_id, ))
+            await db.commit()
 
 
 
