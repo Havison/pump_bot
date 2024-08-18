@@ -16,6 +16,16 @@ async def db_start():
             )
             ''') as cursor: pass
 
+        async with db.execute('''
+            CREATE TABLE IF NOT EXISTS binance (
+            symbol TEXT,
+            lastPrice TEXT,
+            openInterest TEXT,
+            volume TEXT,
+            date_lp TEXT
+            )
+            ''') as cursor: pass
+
         async with db.execute('''CREATE TABLE IF NOT EXISTS quantity_user (
             tg_id INTEGER PRIMARY KEY,
             quantity_setting INTEGER,
@@ -31,7 +41,11 @@ async def db_start():
             changes_short INTEGER,
             interval_short INTEGER)''') as cursor: pass
 
-        async with db.execute('''CREATE TABLE IF NOT EXISTS bybit_symbol (symbol TEXT PRIMARY KEY)''') as cursor: pass
+        async with db.execute('''CREATE TABLE IF NOT EXISTS bybit_symbol (
+        symbol TEXT PRIMARY KEY)''') as cursor: pass
+
+        async with db.execute('''CREATE TABLE IF NOT EXISTS binance_symbol (
+        symbol TEXT PRIMARY KEY)''') as cursor: pass
 
         async with db.execute('''
             CREATE TABLE IF NOT EXISTS bybit (
@@ -47,7 +61,8 @@ async def db_start():
             CREATE TABLE IF NOT EXISTS quantity_signal (
             tg_id INTEGER,
             symbol TEXT,
-            date_sgnl TEXT
+            date_sgnl TEXT,
+            market TEXT
             )
             ''') as cursor: pass
 
@@ -58,6 +73,15 @@ async def db_bybit_smbl(symbol):
         smbl = await smbl.fetchone()
         if smbl is None:
             await db.execute('''INSERT INTO bybit_symbol(symbol) VALUES (?)''', (symbol,))
+            await db.commit()
+
+
+async def db_binance_smbl(symbol):
+    async with aiosqlite.connect('database/database.db') as db:
+        smbl = await db.execute('''SELECT 1 FROM binance_symbol WHERE symbol=?''', (symbol,))
+        smbl = await smbl.fetchone()
+        if smbl is None:
+            await db.execute('''INSERT INTO binance_symbol(symbol) VALUES (?)''', (symbol,))
             await db.commit()
 
 
@@ -74,6 +98,19 @@ async def db_bybit(symbol, lp, oi, vlm):
         await db.commit()
 
 
+async def db_binance(symbol, lp, oi, vlm):
+    async with aiosqlite.connect('database/database.db') as db:
+        count = await db.execute('''SELECT COUNT(*) FROM binance WHERE symbol=?''', (symbol,))
+        count = await count.fetchone()
+        if count[0] > 4800:
+            await db.execute('''DELETE FROM binance WHERE symbol={key} ORDER BY ROWID LIMIT 1'''.format(key=symbol))
+        await db.execute('''INSERT INTO binance(
+        symbol, lastPrice, openInterest, volume, date_lp) VALUES (
+        ?, ?, ?, ?, datetime('now'))''', (
+            symbol, lp, oi, vlm))
+        await db.commit()
+
+
 async def db_create_user(tg_id, username, first_name, last_name):
     async with aiosqlite.connect('database/database.db') as db:
         result = await db.execute('''SELECT 1 FROM users WHERE tg_id={key}'''.format(key=tg_id))
@@ -82,7 +119,7 @@ async def db_create_user(tg_id, username, first_name, last_name):
             await db.execute('''INSERT INTO users (
             tg_id, username, first_name, last_name, date_of_start, binance, bybit) 
             VALUES (
-            ?, ?, ?, ?, datetime('now', '+1 days')), 1, 1''', (
+            ?, ?, ?, ?, datetime('now', '+3 days'), 1, 1)''', (
                 tg_id, username, first_name, last_name)
                              )
             await db.execute('''INSERT INTO long (
@@ -176,10 +213,36 @@ async def long_interval_user(interval_long, symbol):
         result = await result.fetchall()
         return result
 
-
-async def quantity(tg_id, symbol, interval_user):
+async def long_interval_user_binance(interval_long, symbol):
     async with aiosqlite.connect('database/database.db') as db:
-        symbol_signal = await db.execute('''SELECT 1 FROM quantity_signal WHERE tg_id=? and symbol=?''', (tg_id, symbol))
+        added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
+        result = await db.execute('''SELECT lastPrice FROM binance WHERE symbol=? and 
+        date_lp>? ORDER BY date_lp''', (symbol, added_date))
+        result = await result.fetchall()
+        return result
+
+
+async def market_condition(tg_id):
+    async with aiosqlite.connect('database/database.db') as db:
+        result = await db.execute('''SELECT binance, bybit FROM users WHERE tg_id=?''', (tg_id, ))
+        result = await result.fetchone()
+        return result
+
+
+async def market_setting(tg_id, market, on_off):
+    async with aiosqlite.connect('database/database.db') as db:
+        if market == 'bybit':
+            await db.execute('''UPDATE users SET bybit=? WHERE (tg_id=?)''', (on_off, tg_id))
+            await db.commit()
+        elif market == 'binance':
+            await db.execute('''UPDATE users SET binance=? WHERE (tg_id=?)''', (on_off, tg_id))
+            await db.commit()
+
+
+
+async def quantity(tg_id, symbol, interval_user, market):
+    async with aiosqlite.connect('database/database.db') as db:
+        symbol_signal = await db.execute('''SELECT 1 FROM quantity_signal WHERE tg_id=? and symbol=? and market=?''', (tg_id, symbol, market))
         symbol_signal = await symbol_signal.fetchone()
         quantity_tg_ig = await db.execute('''SELECT quantity_setting, quantity_interval FROM 
                 quantity_user WHERE tg_id = ?''', (tg_id,))
@@ -187,35 +250,35 @@ async def quantity(tg_id, symbol, interval_user):
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=quantity_tg_ig[1])
         dt_base = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_user+1)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
-        (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt))
+        (tg_id=? and symbol=? and date_sgnl>? and market=?) ORDER BY date_sgnl''', (tg_id, symbol, dt, market))
         quantity_count = await quantity_count.fetchone()
         quantity_count_base = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
-                (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt_base))
+                (tg_id=? and symbol=? and date_sgnl>? and market=?) ORDER BY date_sgnl''', (tg_id, symbol, dt_base, market))
         quantity_count_base = await quantity_count_base.fetchone()
         if symbol_signal is None:
-            await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl) VALUES (
-            ?, ?, datetime('now'))''', (tg_id, symbol))
+            await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl, market) VALUES (
+            ?, ?, datetime('now'), ?)''', (tg_id, symbol, market))
             await db.commit()
             return True
         elif quantity_count[0] < quantity_tg_ig[0]:
             if quantity_count_base[0] < 1:
-                await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl) 
-                VALUES (?, ?, datetime('now'))''', (tg_id, symbol))
+                await db.execute('''INSERT INTO quantity_signal (tg_id, symbol, date_sgnl, market) 
+                VALUES (?, ?, datetime('now'), ?)''', (tg_id, symbol, market))
                 await db.commit()
                 return True
         else:
             return False
 
 
-async def clear_quantity_signal(tg_id, symbol):
+async def clear_quantity_signal(tg_id, symbol, market):
     async with aiosqlite.connect('database/database.db') as db:
         dt_cl = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1440)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_signal WHERE 
-                (tg_id=? and symbol=? and date_sgnl>?) ORDER BY date_sgnl''', (tg_id, symbol, dt_cl))
+                (tg_id=? and symbol=? and date_sgnl>? and market=?) ORDER BY date_sgnl''', (tg_id, symbol, dt_cl, market))
         quantity_count = await quantity_count.fetchone()
         await db.execute('''DELETE FROM quantity_signal WHERE (
-        tg_id=? and symbol=? and date_sgnl<?)''',
-                         (tg_id, symbol, dt_cl))
+        tg_id=? and symbol=? and date_sgnl<? and market=?)''',
+                         (tg_id, symbol, dt_cl, market))
         await db.commit()
         return quantity_count[0]
 

@@ -30,6 +30,7 @@ class FSMLongSort(StatesGroup):
     quantity_setting = State()
     quantity_interval = State()
     admin = State()
+    market = State()
 
 
 # Создаем объекты кнопок
@@ -39,15 +40,20 @@ button_3 = KeyboardButton(text=LEXICON['/help'])
 button_4 = KeyboardButton(text=LEXICON['/pump'])
 button_5 = KeyboardButton(text=LEXICON['/dump'])
 button_6 = KeyboardButton(text=LEXICON['/quantity'])
+button_7 = KeyboardButton(text=LEXICON['/bybit'])
 button_8 = KeyboardButton(text=LEXICON['/chanel'])
 button_9 = KeyboardButton(text=LEXICON['/hours_24'])
 button_10 = KeyboardButton(text=LEXICON['/hours_12'])
 button_11 = KeyboardButton(text=LEXICON['/hours_6'])
 button_12 = KeyboardButton(text=LEXICON['/on_limited'])
+button_13 = KeyboardButton(text=LEXICON['/binance'])
+button_14 = KeyboardButton(text=LEXICON['/market'])
+button_15 = KeyboardButton(text=LEXICON['/bybit_off'])
+button_16 = KeyboardButton(text=LEXICON['/binance_off'])
 
 # Создаем объект клавиатуры, добавляя в него кнопки
 keyboard_button = ReplyKeyboardMarkup(keyboard=[[button_1, button_2, button_3]], resize_keyboard=True)
-keyboard_button_setting = ReplyKeyboardMarkup(keyboard=[[button_4, button_5, button_6], [button_8]],
+keyboard_button_setting = ReplyKeyboardMarkup(keyboard=[[button_4, button_5, button_6], [button_14, button_8]],
                                               resize_keyboard=True)
 keyboard_button_chanel = ReplyKeyboardMarkup(keyboard=[[button_8]], resize_keyboard=True)
 keyboard_button_quantity = ReplyKeyboardMarkup(keyboard=[[button_9, button_10], [button_11, button_12], [button_8]],
@@ -69,9 +75,10 @@ async def process_chanel_press(message: Message, state: FSMContext):
         text=LEXICON_TEXT['chanel'], reply_markup=keyboard_button)
 
 
-@router.message(Command(commands='help'), StateFilter(default_state))  # Этот хэндлер срабатывает на команду /help
+@router.message(Command(commands='help'), StateFilter(default_state))
+@router.message(F.text == LEXICON['/help'], StateFilter(default_state))# Этот хэндлер срабатывает на команду /help
 async def process_help_command(message: Message):
-    await message.answer(text=LEXICON['/help'])
+    await message.answer(text=LEXICON_TEXT['help'])
 
 
 @router.message(Command(commands='reset'), StateFilter(default_state))
@@ -292,20 +299,105 @@ async def time_premium(message: Message):
 async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
-    await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]} (изменения за {interval} минут)</b>\n'
+    await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>⚫ByBit</b>\n'
+                                               f'<b>Изменения за {interval} минут</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
                                                f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
+@router.message(F.text == LEXICON['/market'], StateFilter(default_state))
+async def press_market(message: Message, state):
+    binance, bybit = await db.market_condition(message.from_user.id)
+    if binance and bybit:
+        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[button_7, button_13], [button_8]],
+            resize_keyboard=True))
+        await state.set_state(FSMLongSort.market)
+    elif binance and not bybit:
+        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[button_15, button_13], [button_8]],
+            resize_keyboard=True))
+        await state.set_state(FSMLongSort.market)
+    elif not binance and bybit:
+        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[button_7, button_16], [button_8]],
+            resize_keyboard=True))
+        await state.set_state(FSMLongSort.market)
+    else:
+        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[button_15, button_16], [button_8]],
+            resize_keyboard=True))
+        await state.set_state(FSMLongSort.market)
+
+
+@router.message(F.text == LEXICON['/bybit'], StateFilter(FSMLongSort.market))
+@router.message(F.text == LEXICON['/bybit_off'], StateFilter(FSMLongSort.market))
+async def bybit_off(message: Message, state: FSMContext):
+    binance, bybit = await db.market_condition(message.from_user.id)
+    if bybit:
+        await db.market_setting(message.from_user.id, 'bybit', 0)
+        await state.clear()
+        await press_market(message, state)
+    else:
+        await db.market_setting(message.from_user.id, 'bybit', 1)
+        await state.clear()
+        await press_market(message, state)
+
+
+@router.message(F.text == LEXICON['/binance'], StateFilter(FSMLongSort.market))
+@router.message(F.text == LEXICON['/binance_off'], StateFilter(FSMLongSort.market))
+async def bybit_off(message: Message, state: FSMContext):
+    binance, bybit = await db.market_condition(message.from_user.id)
+    if binance:
+        await db.market_setting(message.from_user.id, 'binance', 0)
+        await state.clear()
+        await press_market(message, state)
+    else:
+        await db.market_setting(message.from_user.id, 'binance', 1)
+        await state.clear()
+        await press_market(message, state)
+
+
+
+
+
+
 async def message_short(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
-    await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]} (изменения за {interval} минут)</b>\n'
+    await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>⚫ByBit</b>\n'
+                                               f'Изменения за {interval} минут\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
                                                f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                           parse_mode='HTML', disable_web_page_preview=True)
+
+
+async def message_long_binance(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
+    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
+    await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>🟡Binance</b>\n'
+                                               f'<b>Изменения за {interval} минут</b>\n'
+                                               f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
+                                               f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
+                                               f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                           parse_mode='HTML', disable_web_page_preview=True)
+
+
+async def message_short_binance(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
+    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
+    await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>🌕Binance</b>\n'
+                                               f'<b>Изменения за {interval} минут</b>\n'
+                                               f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
+                                               f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
+                                               f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 

@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from environs import Env
 
 
-
 @dataclass
 class ByBit:
     api_key: str         # ключ от bybit
@@ -11,13 +10,14 @@ class ByBit:
 
 @dataclass
 class TgBot:
-    token: str            # Токен для доступа к телеграм-боту
+    token: str # Токен для доступа к телеграм-боту
 
 
 @dataclass
 class Config:
     tg_bot: TgBot
     by_bit: ByBit
+    binance_key: ByBit
 
 
 def load_config(path: str | None = None) -> Config:
@@ -32,6 +32,10 @@ def load_config(path: str | None = None) -> Config:
         by_bit=ByBit(
             api_key=env('API_KEY'),
             api_secret=env('API_SECRET'),
+        ),
+        binance_key=ByBit(
+            api_key=env('API_KEY_binance'),
+            api_secret=env('API_SECRET_binance')
         )
     )
 

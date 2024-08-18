@@ -9,7 +9,7 @@ from handlers import user
 from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
 from database.database import db_start
-from services.signal_message import symbol_bybit
+from services.signal_message import symbol_bybit, symbol_binance
 
 logger = logging.getLogger(__name__)
 dp = Dispatcher()
@@ -19,6 +19,11 @@ tracemalloc.start()
 async def countinues_taks():
     while True:
         await symbol_bybit()
+        await asyncio.sleep(3)
+
+async def countinues_taks_binance():
+    while True:
+        await symbol_binance()
         await asyncio.sleep(3)
 
 
@@ -35,6 +40,7 @@ async def main():
     config: Config = load_config('.env')
 
     task = asyncio.create_task(countinues_taks())
+    binance_task = asyncio.create_task(countinues_taks_binance())
 
     # Инициализируем объект хранилища
     #storage = ...
