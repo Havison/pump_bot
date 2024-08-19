@@ -19,12 +19,8 @@ tracemalloc.start()
 async def countinues_taks():
     while True:
         await symbol_bybit()
-
-
-async def countinues_taks_binance():
-    while True:
         await symbol_binance()
-
+        await asyncio.sleep(5)
 
 
 async def main():
@@ -40,7 +36,6 @@ async def main():
     config: Config = load_config('.env')
 
     task = asyncio.create_task(countinues_taks())
-    binance_task = asyncio.create_task(countinues_taks_binance())
 
     # Инициализируем объект хранилища
     #storage = ...
