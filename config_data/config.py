@@ -18,6 +18,7 @@ class Config:
     tg_bot: TgBot
     by_bit: ByBit
     binance_key: ByBit
+    tg_bot_long: TgBot
 
 
 def load_config(path: str | None = None) -> Config:
@@ -36,6 +37,8 @@ def load_config(path: str | None = None) -> Config:
         binance_key=ByBit(
             api_key=env('API_KEY_binance'),
             api_secret=env('API_SECRET_binance')
-        )
+        ),
+        tg_bot_long=TgBot(
+            token=env('BOT_TOKEN_LONG'))
     )
 

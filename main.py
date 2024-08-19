@@ -19,12 +19,12 @@ tracemalloc.start()
 async def countinues_taks():
     while True:
         await symbol_bybit()
-        await asyncio.sleep(3)
+
 
 async def countinues_taks_binance():
     while True:
         await symbol_binance()
-        await asyncio.sleep(3)
+
 
 
 async def main():
