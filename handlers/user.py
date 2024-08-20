@@ -268,12 +268,13 @@ async def time_premium(message: Message):
 async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]}</b>\n'
                                                f'<b>⚫ByBit</b>\n'
                                                f'<b>Изменения за {interval} минут</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{binance}\">Binance</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
@@ -339,36 +340,39 @@ async def bybit_off(message: Message):
 async def message_short(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]}</b>\n'
                                                f'<b>⚫ByBit</b>\n'
                                                f'Изменения за {interval} минут\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{binance}\">Binance</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
 async def message_long_binance(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     binance = f'https://www.binance.com/ru/futures/{symbol}'
+    bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]}</b>\n'
                                                f'<b>🟡Binance</b>\n'
                                                f'<b>Изменения за {interval} минут</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{bybit}\">ByBit</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
 async def message_short_binance(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
     binance = f'https://www.binance.com/ru/futures/{symbol}'
+    bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]}</b>\n'
                                                f'<b>🌕Binance</b>\n'
                                                f'<b>Изменения за {interval} минут</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
                                                f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
-                                               f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a>',
+                                               f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{bybit}\">ByBit</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
