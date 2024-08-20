@@ -63,7 +63,7 @@ keyboard_button_quantity = ReplyKeyboardMarkup(keyboard=[[button_9, button_10], 
 async def setting_status(tg_id, message: Message):
     setting_user = await db.db_setting_selection(tg_id)
     hours_text = {30: 'часа', 360: 'часов', 720: 'часов', 1440: 'часа'}
-    quantity_text = '<b>🧿Количество сигналов без ограничений🧿</b>'
+    quantity_text = '<b>🧿Количество сигналов не ограничено🧿</b>'
     quantity_text_limit = (
         '🧿<b>Количество сигналов за {quantity_interval} '
         '{hours_text}: {quantity_setting}</b>🧿'
