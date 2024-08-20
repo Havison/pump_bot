@@ -100,14 +100,14 @@ async def process_chanel_press(message: Message, state: FSMContext):
 @router.message(Command(commands='help'), StateFilter(default_state))
 @router.message(F.text == LEXICON['/help'], StateFilter(default_state))# Этот хэндлер срабатывает на команду /help
 async def process_help_command(message: Message):
-    await message.answer(text=LEXICON_TEXT['help'])
+    await message.answer(text=LEXICON_TEXT['help'], reply_markup=keyboard_button)
 
 
 @router.message(Command(commands='reset'), StateFilter(default_state))
 async def process_reset_command(message: Message):
     prm_date = await db.premium_user(message.from_user.id)
     if not prm_date:
-        await message.answer(text=LEXICON_TEXT['fail_premium'])
+        await message.answer(text=LEXICON_TEXT['fail_premium'], reply_markup=keyboard_button)
     else:
         await db.db_changes_long(message.from_user.id, 10)
         await db.db_changes_short(message.from_user.id, -10)
@@ -116,7 +116,7 @@ async def process_reset_command(message: Message):
         await db.db_quantity_interval(message.from_user.id, 30)
         await db.db_quantity_setting(message.from_user.id, 1)
         t = await setting_status(message.from_user.id, message)
-        await message.answer(text=t)
+        await message.answer(text=t, reply_markup=keyboard_button)
 
 
 @router.message(F.text == LEXICON['/setting'], StateFilter(default_state))
@@ -253,9 +253,9 @@ async def quantity_warning(message: Message):
 async def time_premium(message: Message):
     prm_date = await db.premium_user(message.from_user.id)
     if not prm_date:
-        await message.answer(text=LEXICON_TEXT['fail_premium'])
+        await message.answer(text=LEXICON_TEXT['fail_premium'], reply_markup=keyboard_button)
     else:
-        await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date[0]))
+        await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date[0]), reply_markup=keyboard_button)
 
 async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
@@ -270,7 +270,7 @@ async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
 
 
 @router.message(F.text == LEXICON['/market'], StateFilter(default_state))
-async def press_market(message: Message, state):
+async def press_market(message: Message):
     market = await db.db_setting_selection(message.from_user.id)
     binance = market[4]
     bybit = market[5]
@@ -278,55 +278,50 @@ async def press_market(message: Message, state):
         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
             keyboard=[[button_7, button_13], [button_8]],
             resize_keyboard=True))
-        await state.set_state(FSMLongSort.market)
+
     elif binance and not bybit:
         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
             keyboard=[[button_15, button_13], [button_8]],
             resize_keyboard=True))
-        await state.set_state(FSMLongSort.market)
+
     elif not binance and bybit:
         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
             keyboard=[[button_7, button_16], [button_8]],
             resize_keyboard=True))
-        await state.set_state(FSMLongSort.market)
+
     else:
         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
             keyboard=[[button_15, button_16], [button_8]],
             resize_keyboard=True))
-        await state.set_state(FSMLongSort.market)
 
 
-@router.message(F.text == LEXICON['/bybit'], StateFilter(FSMLongSort.market))
-@router.message(F.text == LEXICON['/bybit_off'], StateFilter(FSMLongSort.market))
-async def bybit_off(message: Message, state: FSMContext):
+
+@router.message(F.text == LEXICON['/bybit'], StateFilter(default_state))
+@router.message(F.text == LEXICON['/bybit_off'], StateFilter(default_state))
+async def bybit_off(message: Message):
     market = await db.db_setting_selection(message.from_user.id)
     bybit = market[5]
     if bybit:
         await db.market_setting(message.from_user.id, 'bybit', 0)
-        await state.clear()
-        await press_market(message, state)
+        await press_market(message)
     else:
         await db.market_setting(message.from_user.id, 'bybit', 1)
-        await state.clear()
-        await press_market(message, state)
-    if message.answer(text='/setting'):
-        await state.clear()
+        await press_market(message)
 
 
 
-@router.message(F.text == LEXICON['/binance'], StateFilter(FSMLongSort.market))
-@router.message(F.text == LEXICON['/binance_off'], StateFilter(FSMLongSort.market))
-async def bybit_off(message: Message, state: FSMContext):
+
+@router.message(F.text == LEXICON['/binance'], StateFilter(default_state))
+@router.message(F.text == LEXICON['/binance_off'], StateFilter(default_state))
+async def bybit_off(message: Message):
     market = await db.db_setting_selection(message.from_user.id)
     binance = market[4]
     if binance:
         await db.market_setting(message.from_user.id, 'binance', 0)
-        await state.clear()
-        await press_market(message, state)
+        await press_market(message)
     else:
         await db.market_setting(message.from_user.id, 'binance', 1)
-        await state.clear()
-        await press_market(message, state)
+        await press_market(message)
 
 
 
