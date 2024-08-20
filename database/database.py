@@ -272,3 +272,4 @@ async def premium_setting(tg_id, days):
             await db.execute('''UPDATE users SET date_of_start=datetime(datetime('now'), '+30 days') WHERE (tg_id=?)''',
                              (tg_id,))
             await db.commit()
+

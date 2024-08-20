@@ -381,3 +381,4 @@ async def prem(message: Message, state: FSMContext):
     id_tg = message.text.split(' ')
     await db.premium_setting(id_tg[0], id_tg[1])
     await state.clear()
+
