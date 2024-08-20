@@ -1,3 +1,5 @@
+import asyncio
+
 import ccxt
 
 from pybit.unified_trading import HTTP
@@ -24,6 +26,7 @@ client = Client(config.binance_key.api_key, config.binance_key.api_secret, testn
 
 
 async def symbol_bybit():
+    await asyncio.sleep(3)
     data = session.get_tickers(category="linear")
     bybit_symbol = []
     bybit_data = []
@@ -72,6 +75,7 @@ async def symbol_bybit():
 
 
 async def symbol_binance():
+    await asyncio.sleep(3)
     data_binance = []
     data_binance = [(symbol['symbol'], symbol['price'], 0, 0) for symbol in client.futures_symbol_ticker() if 'USDT' in symbol['symbol']]
     await db_binance(data_binance)

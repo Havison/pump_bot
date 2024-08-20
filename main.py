@@ -16,11 +16,15 @@ dp = Dispatcher()
 tracemalloc.start()
 
 
-async def countinues_taks():
+async def countinues_taks_bybit():
     while True:
         await symbol_bybit()
+
+
+async def countinues_taks_binance():
+    while True:
         await symbol_binance()
-        await asyncio.sleep(3)
+
 
 
 async def main():
@@ -35,7 +39,8 @@ async def main():
     # Загружаем конфиг в переменную config
     config: Config = load_config('.env')
 
-    task = asyncio.create_task(countinues_taks())
+    task_bybit = asyncio.create_task(countinues_taks_bybit())
+    task_binance = asyncio.create_task(countinues_taks_binance())
 
     # Инициализируем объект хранилища
     #storage = ...
