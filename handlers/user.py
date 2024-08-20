@@ -309,6 +309,9 @@ async def bybit_off(message: Message, state: FSMContext):
         await db.market_setting(message.from_user.id, 'bybit', 1)
         await state.clear()
         await press_market(message, state)
+    if message.answer(text='/setting'):
+        await state.clear()
+
 
 
 @router.message(F.text == LEXICON['/binance'], StateFilter(FSMLongSort.market))

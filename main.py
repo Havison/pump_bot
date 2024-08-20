@@ -20,7 +20,7 @@ async def countinues_taks():
     while True:
         await symbol_bybit()
         await symbol_binance()
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
 
 
 async def main():
