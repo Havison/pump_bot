@@ -292,13 +292,8 @@ async def stop_signal(tg_id, state):
 
 async def state_signal(tg_id):
     async with aiosqlite.connect('database/database.db') as db:
-        test_creat = await db.execute('''SELECT 1 FROM stop_signal WHERE (tg_id=?)''', (tg_id, ))
-        test_creat = await test_creat.fetchone()
-        if test_creat is None:
-            await db.execute('''INSERT INTO stop_signal(tg_id, state) VALUES (?, 1)''', (tg_id, ))
         state_signal_user = await db.execute('''SELECT state FROM stop_signal WHERE (tg_id=?)''',
                                    (tg_id, ))
-        await db.commit()
         state_signal_user = await state_signal_user.fetchone()
         return state_signal_user
 
