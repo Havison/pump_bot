@@ -17,10 +17,10 @@ LEXICON: dict[str, str] = {'/start': '<b>📉Приветствую, я бот-�
                            '/hours_12': 'За 12 часов🕛',
                            '/hours_6': 'За 6 часов🕕',
                            '/on_limited': 'Без ограничений🔄',
-                           '/bybit': '⚫ByBit🟢',
-                           '/binance': '🟡Binance🟢',
-                           '/bybit_off': '⚫ByBit🔴',
-                           '/binance_off': '🟡Binance🔴',
+                           '/bybit': 'ByBit🟢',
+                           '/binance': 'Binance🟢',
+                           '/bybit_off': 'ByBit🔴',
+                           '/binance_off': 'Binance🔴',
                            '/market': 'Биржа📊'
                            }
 
