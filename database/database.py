@@ -118,10 +118,11 @@ async def db_create_user(tg_id, username, first_name, last_name):
             VALUES (?, 10, 30, -10, 30, 1, 1, 3, 20, 3, 3, 1, 30)''', (
                 tg_id,)
                              )
+            await db.commit()
 
-            # await db.execute('''INSERT INTO stop_signal (tg_id, state)
-            # VALUES (?, 1)''', (tg_id,))
-            # await db.commit()
+            await db.execute('''INSERT INTO stop_signal (tg_id, state)
+            VALUES (?, 1)''', (tg_id,))
+            await db.commit()
 
 
 async def db_changes_long(tg_id, changes_long):
