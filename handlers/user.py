@@ -274,8 +274,6 @@ async def press_market(message: Message, state):
     market = await db.db_setting_selection(message.from_user.id)
     binance = market[4]
     bybit = market[5]
-    print(market)
-    print(binance, bybit)
     if binance and bybit:
         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
             keyboard=[[button_7, button_13], [button_8]],

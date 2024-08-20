@@ -48,6 +48,8 @@ async def symbol_bybit():
              changes_mini_interval, quantity_setting,
              quantity_interval) = await db_setting_selection(idt)
             user_price_interval = await long_interval_user(interval_long, symbol)
+            if not bybit:
+                continue
             for i in user_price_interval:
                 a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
                 if a > changes_long:
@@ -85,6 +87,8 @@ async def symbol_binance():
              changes_mini_interval, quantity_setting,
              quantity_interval) = await db_setting_selection(idt)
             user_price_intervabi = await long_interval_user_binance(interval_long, symbol)
+            if not binance:
+                continue
             for i in user_price_intervabi:
                 a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
                 if a > changes_long:
