@@ -119,9 +119,9 @@ async def db_create_user(tg_id, username, first_name, last_name):
                 tg_id,)
                              )
 
-            await db.execute('''INSERT INTO stop_signal (tg_id, state)
-            VALUES (?, 1)''', (tg_id,))
-            await db.commit()
+            # await db.execute('''INSERT INTO stop_signal (tg_id, state)
+            # VALUES (?, 1)''', (tg_id,))
+            # await db.commit()
 
 
 async def db_changes_long(tg_id, changes_long):
@@ -297,6 +297,7 @@ async def state_signal(tg_id):
             await db.execute('''INSERT INTO stop_signal(tg_id, state) VALUES (?, 1)''', (tg_id, ))
         state_signal_user = await db.execute('''SELECT state FROM stop_signal WHERE (tg_id=?)''',
                                    (tg_id, ))
+        await db.commit()
         state_signal_user = await state_signal_user.fetchone()
         return state_signal_user
 
