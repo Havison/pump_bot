@@ -66,6 +66,13 @@ async def db_start():
             )
             ''') as cursor: pass
 
+        async with db.execute('''
+        CREATE TABLE IF NOT EXISTS stop_signal (
+            tg_id INTEGER,
+            state INTEGER
+            )
+            ''') as cursor: pass
+
 
 async def db_bybit(symbol):
     async with aiosqlite.connect('database/database.db') as db:
@@ -111,6 +118,9 @@ async def db_create_user(tg_id, username, first_name, last_name):
             VALUES (?, 10, 30, -10, 30, 1, 1, 3, 20, 3, 3, 1, 30)''', (
                 tg_id,)
                              )
+
+            await db.execute('''INSERT INTO stop_signal (tg_id, state)
+            VALUES (?, 1)''', (tg_id,))
             await db.commit()
 
 
@@ -272,4 +282,19 @@ async def premium_setting(tg_id, days):
             await db.execute('''UPDATE users SET date_of_start=datetime(datetime('now'), '+30 days') WHERE (tg_id=?)''',
                              (tg_id,))
             await db.commit()
+
+
+async def stop_signal(tg_id, state):
+    async with aiosqlite.connect('database/database.db') as db:
+        await db.execute('''UPDATE stop_signal SET state=? WHERE (tg_id=?)''', (state, tg_id))
+        await db.commit()
+
+async def state_signal(tg_id):
+    async with aiosqlite.connect('database/database.db') as db:
+        state_signal_user = await db.execute('''SELECT state FROM stop_signal WHERE (tg_id=?)''',
+                                   (tg_id, ))
+        state_signal_user = await state_signal_user.fetchone()
+        return state_signal_user
+
+
 

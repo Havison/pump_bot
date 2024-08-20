@@ -95,6 +95,7 @@ async def process_chanel_press(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
         text=LEXICON_TEXT['chanel'], reply_markup=keyboard_button)
+    await db.stop_signal(message.from_user.id, 1)
 
 
 @router.message(Command(commands='help'), StateFilter(default_state))
@@ -135,6 +136,7 @@ async def process_long_press(message: Message, state: FSMContext):
     await message.answer(
         text=LEXICON_TEXT['long_setting_changes'], reply_markup=keyboard_button_chanel)
     #устаналиваем состояние вводе роста
+    await db.stop_signal(message.from_user.id, 0)
     await state.set_state(FSMLongSort.changes_long)
 
 
@@ -152,6 +154,7 @@ async def long_setting_interval(message: Message, state: FSMContext):
     await db.db_interval_long(message.from_user.id, int(message.text))
     t = await setting_status(message.from_user.id, message)
     await message.answer(text=t, reply_markup=keyboard_button)
+    await db.stop_signal(message.from_user.id, 1)
     await state.clear()
 
 
@@ -164,6 +167,7 @@ async def warning_long_changes(message: Message):
 async def process_short_press(message: Message, state: FSMContext):
     await message.answer(
         text=LEXICON_TEXT['short_setting_changes'], reply_markup=keyboard_button_chanel)
+    await db.stop_signal(message.from_user.id, 0)
     #устаналиваем состояние вводе роста
     await state.set_state(FSMLongSort.changes_short)
 
@@ -182,6 +186,7 @@ async def long_setting_interval(message: Message, state: FSMContext):
     await db.db_interval_short(message.from_user.id, int(message.text))
     t = await setting_status(message.from_user.id, message)
     await message.answer(text=t, reply_markup=keyboard_button)
+    await db.stop_signal(message.from_user.id, 1)
     await state.clear()
 
 
@@ -201,6 +206,7 @@ async def process_short_press(message: Message, state: FSMContext):
     await message.answer(
         text=LEXICON_TEXT['quantity_interval'], reply_markup=keyboard_button_quantity)
     #устаналиваем состояние вводе роста
+    await db.stop_signal(message.from_user.id, 0)
     await state.set_state(FSMLongSort.quantity_interval)
 
 
@@ -215,6 +221,7 @@ async def quantity_interval_setting(message: Message, state: FSMContext):
         t = await setting_status(message.from_user.id, message)
         await message.answer(text=t, reply_markup=keyboard_button)
         await db.db_quantity_setting(message.from_user.id, 1)
+        await db.stop_signal(message.from_user.id, 1)
         await state.clear()
     if message.text == LEXICON['/hours_24']:
         qi = 24 * 60
@@ -239,6 +246,7 @@ async def quantity_setting(message: Message, state: FSMContext):
     await db.db_quantity_setting(message.from_user.id, int(message.text))
     t = await setting_status(message.from_user.id, message)
     await message.answer(text=t, reply_markup=keyboard_button)
+    await db.stop_signal(message.from_user.id, 1)
     await state.clear()
 
 

@@ -3,7 +3,7 @@ import ccxt
 from pybit.unified_trading import HTTP
 from binance.client import Client
 from config_data.config import Config, load_config
-from database.database import (user_id, long_interval_user, db_bybit, quantity, clear_quantity_signal, premium_user, db_binance, long_interval_user_binance, db_setting_selection)
+from database.database import (user_id, long_interval_user, db_bybit, quantity, clear_quantity_signal, premium_user, db_binance, long_interval_user_binance, db_setting_selection, state_signal)
 
 from handlers.user import message_long, message_short, message_short_binance, message_long_binance
 
@@ -40,7 +40,10 @@ async def symbol_bybit():
         tg_id_user = [i[0] for i in user]
         for idt in tg_id_user:
             premium = await premium_user(idt)
+            signal_state = await state_signal(idt)
             if not premium:
+                continue
+            if not signal_state[0]:
                 continue
             (changes_long, interval_long, changes_short,
              interval_short, binance, bybit, open_interes,
@@ -79,7 +82,10 @@ async def symbol_binance():
         tg_id = [i[0] for i in user]
         for idt in tg_id:
             premium = await premium_user(idt)
+            signal_state = await state_signal(idt)
             if not premium:
+                continue
+            if not signal_state[0]:
                 continue
             (changes_long, interval_long, changes_short,
              interval_short, binance, bybit, open_interes,
