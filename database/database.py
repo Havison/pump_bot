@@ -77,7 +77,7 @@ async def db_start():
 async def db_bybit(symbol):
     async with aiosqlite.connect('database/database.db') as db:
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=240)
-        await db.execute('''DELETE FROM bybit WHERE date_lp<?''', (dt, ))
+        await db.execute('''DELETE FROM bybit WHERE date_lp<?''', (dt,))
         await db.commit()
         await db.executemany('''INSERT INTO bybit(
         symbol, lastPrice, openInterest, volume, date_lp) VALUES (

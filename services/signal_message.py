@@ -24,9 +24,8 @@ session = HTTP(
 client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
 
 
-
 async def symbol_bybit():
-    await asyncio.sleep(3)
+    await asyncio.sleep(4)
     data = session.get_tickers(category="linear")
     bybit_symbol = []
     bybit_data = []
@@ -72,10 +71,8 @@ async def symbol_bybit():
                         await message_short(idt, b, symbol, interval_short, q, qi_text[quantity_interval])
 
 
-
-
 async def symbol_binance():
-    await asyncio.sleep(3)
+    await asyncio.sleep(4)
     data_binance = []
     data_binance = [(symbol['symbol'], symbol['price'], 0, 0) for symbol in client.futures_symbol_ticker() if 'USDT' in symbol['symbol']]
     await db_binance(data_binance)
