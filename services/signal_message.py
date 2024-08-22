@@ -1,7 +1,7 @@
 import asyncio
 
 import ccxt
-
+import logging
 from pybit.unified_trading import HTTP
 from binance.client import Client
 from config_data.config import Config, load_config
@@ -10,7 +10,13 @@ from database.database import (user_id, long_interval_user, db_bybit, quantity, 
 from handlers.user import message_long, message_short, message_short_binance, message_long_binance
 
 binance_connect = ccxt.binance()
-
+logger2 = logging.getLogger(__name__)
+handler2 = logging.FileHandler(f"{__name__}.log")
+formatter2 = logging.Formatter("%(filename)s:%(lineno)d #%(levelname)-8s "
+                               "[%(asctime)s] - %(name)s - %(message)s")
+handler2.setFormatter(formatter2)
+logger2.addHandler(handler2)
+logger2.info(f"Testing the custom logger for module {__name__}")
 
 
 config: Config = load_config('.env')
@@ -70,7 +76,8 @@ async def symbol_bybit():
                             q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_short(idt, b, symbol, interval_short, q, qi_text[quantity_interval])
-    except:
+    except Exception as e:
+        logger2.error(e)
         await asyncio.sleep(4)
 
 
@@ -115,7 +122,8 @@ async def symbol_binance():
                             q = await clear_quantity_signal(idt, symbol, 'binance', 0)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_short_binance(idt, b, symbol, interval_short, q, qi_text[quantity_interval])
-    except:
+    except Exception as e:
+        logger2.error(e)
         await asyncio.sleep(4)
 
 

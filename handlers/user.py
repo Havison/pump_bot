@@ -1,4 +1,5 @@
 from aiogram import F, Router, Bot
+import logging
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
@@ -16,6 +17,14 @@ bot = Bot(
     token=config.tg_bot.token,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
+
+logger3 = logging.getLogger(__name__)
+handler3 = logging.FileHandler(f"{__name__}.log")
+formatter3 = logging.Formatter("%(filename)s:%(lineno)d #%(levelname)-8s "
+                               "[%(asctime)s] - %(name)s - %(message)s")
+handler3.setFormatter(formatter3)
+logger3.addHandler(handler3)
+logger3.info(f"Testing the custom logger for module {__name__}")
 
 _i = humanize.i18n.activate('ru_RU')
 storage = MemoryStorage()

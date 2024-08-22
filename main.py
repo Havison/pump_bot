@@ -11,6 +11,20 @@ from keyboards.set_menu import set_main_menu
 from database.database import db_start
 from services.signal_message import symbol_bybit, symbol_binance
 
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://833576debd9b254b6af3a73fda18b5cf@o4507817931571200.ingest.de.sentry.io/4507817934848080",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
+
+
 logger = logging.getLogger(__name__)
 dp = Dispatcher()
 tracemalloc.start()
@@ -31,6 +45,7 @@ async def main():
     # Конфигурируем логирование
     logging.basicConfig(
         level=logging.INFO,
+        filename=f'{__name__}.log',
         format='%(filename)s:%(lineno)d #%(levelname)-8s '
                '[%(asctime)s] - %(name)s - %(message)s')
     # Выводим в консоль информацию о начале запуска бота
