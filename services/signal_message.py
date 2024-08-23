@@ -64,14 +64,14 @@ async def symbol_bybit():
                     continue
                 for i in user_price_interval:
                     a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-                    if a > changes_long:
+                    if a >= changes_long:
                         if await quantity(idt, symbol, interval_long, 'bybit', 1):
                             q = await clear_quantity_signal(idt, symbol, 'bybit', 1)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_long(idt, a, symbol, interval_long, q, qi_text[quantity_interval])
                 for i in user_price_interval:
                     b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-                    if b < changes_short:
+                    if b <= changes_short:
                         if await quantity(idt, symbol, interval_short, 'bybit', 0):
                             q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
@@ -110,14 +110,14 @@ async def symbol_binance():
                     continue
                 for i in user_price_intervabi:
                     a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-                    if a > changes_long:
+                    if a >= changes_long:
                         if await quantity(idt, symbol, interval_long, 'binance', 1):
                             q = await clear_quantity_signal(idt, symbol, 'binance', 1)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_long_binance(idt, a, symbol, interval_long, q, qi_text[quantity_interval])
                 for i in user_price_intervabi:
                     b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-                    if b < changes_short:
+                    if b <= changes_short:
                         if await quantity(idt, symbol, interval_short, 'binance', 0):
                             q = await clear_quantity_signal(idt, symbol, 'binance', 0)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
