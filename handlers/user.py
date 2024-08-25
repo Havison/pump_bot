@@ -2,7 +2,8 @@ from aiogram import F, Router, Bot
 import logging
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, CallbackQuery, \
+    InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
@@ -11,12 +12,16 @@ from lexicon.lexicon import LEXICON, LEXICON_TEXT
 import database as db
 import humanize
 from config_data.config import Config, load_config
+from cloud_pay.paymant import CryptoCloudSDK
 
 config: Config = load_config('.env')
 bot = Bot(
     token=config.tg_bot.token,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
+
+create_invoice = CryptoCloudSDK()
+
 
 logger3 = logging.getLogger(__name__)
 handler3 = logging.FileHandler(f"{__name__}.log")
@@ -59,9 +64,11 @@ button_13 = KeyboardButton(text=LEXICON['/binance'])
 button_14 = KeyboardButton(text=LEXICON['/market'])
 button_15 = KeyboardButton(text=LEXICON['/bybit_off'])
 button_16 = KeyboardButton(text=LEXICON['/binance_off'])
+button_17 = KeyboardButton(text=LEXICON['/prem'])
+
 
 # Создаем объект клавиатуры, добавляя в него кнопки
-keyboard_button = ReplyKeyboardMarkup(keyboard=[[button_1, button_2, button_3]], resize_keyboard=True)
+keyboard_button = ReplyKeyboardMarkup(keyboard=[[button_1, button_2], [button_3, button_17]], resize_keyboard=True)
 keyboard_button_setting = ReplyKeyboardMarkup(keyboard=[[button_4, button_5, button_6], [button_14, button_8]],
                                               resize_keyboard=True)
 keyboard_button_chanel = ReplyKeyboardMarkup(keyboard=[[button_8]], resize_keyboard=True)
@@ -97,6 +104,30 @@ async def process_start_command(message: Message):
                             message.from_user.last_name)
     await message.answer(text=LEXICON['/start'],
                          reply_markup=keyboard_button)
+
+@router.message(F.text == LEXICON['/prem'], StateFilter(default_state))
+async def process_prem(message: Message):
+    prm_date = await db.premium_user(message.from_user.id)
+    if prm_date:
+        await message.answer(text=LEXICON_TEXT['premium_pay'].format(prm_date=prm_date[0]))
+    else:
+        data = {
+            "amount": 10, "shop_id": 'yUwIRDANiwodkJ1f', "currency": 'USD', "order_id": message.from_user.id,
+            "add_fields": {
+                "time_to_pay": {
+                    "hours": 0, "minutes": 30
+                }
+            }
+        }
+        ordder = create_invoice.create_invoice(data)
+        t = ordder['result']['link']
+        button_inlaite = InlineKeyboardButton(text=LEXICON['pay'], url=t)
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[button_inlaite]])
+        await message.answer(
+            text=LEXICON_TEXT['pay_30'],
+            reply_markup=keyboard
+            )
+
 
 
 @router.message(F.text == LEXICON['/chanel'])
@@ -398,4 +429,7 @@ async def prem(message: Message, state: FSMContext):
     id_tg = message.text.split(' ')
     await db.premium_setting(id_tg[0], id_tg[1])
     await state.clear()
+
+
+
 

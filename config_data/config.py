@@ -12,6 +12,11 @@ class ByBit:
 class TgBot:
     token: str # Токен для доступа к телеграм-боту
 
+@dataclass
+class Pay:
+    api_key_cloud: str
+    api_secret_cloud: str
+
 
 @dataclass
 class Config:
@@ -19,6 +24,7 @@ class Config:
     by_bit: ByBit
     binance_key: ByBit
     tg_bot_long: TgBot
+    pay: Pay
 
 
 def load_config(path: str | None = None) -> Config:
@@ -39,6 +45,11 @@ def load_config(path: str | None = None) -> Config:
             api_secret=env('API_SECRET_binance')
         ),
         tg_bot_long=TgBot(
-            token=env('BOT_TOKEN_LONG'))
+            token=env('BOT_TOKEN_LONG')
+        ),
+        pay=Pay(
+            api_key_cloud=env('API_KEY_CLOUD'),
+            api_secret_cloud=env('API_SECRET_CLOUD')
+        ),
     )
 
