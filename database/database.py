@@ -44,9 +44,7 @@ async def db_start():
             changes_long_mini INTEGER,
             changes_mini_interval INTEGER,
             quantity_setting INTEGER,
-            quantity_interval INTEGER,
-            quantity_oi_setting INTEGER,
-            quantity_oi_interval INTEGER)''') as cursor: pass
+            quantity_interval INTEGER)''') as cursor: pass
 
         async with db.execute('''
             CREATE TABLE IF NOT EXISTS bybit (
@@ -115,10 +113,9 @@ async def db_create_user(tg_id, username, first_name, last_name):
             changes_short, interval_short, binance, 
             bybit, open_interes, open_interes_interval, 
             changes_long_mini, changes_mini_interval, 
-            quantity_setting, quantity_interval, quantity_oi_setting,
-            quantity_oi_interval
+            quantity_setting, quantity_interval
             )
-            VALUES (?, 10, 30, -10, 30, 1, 1, 3, 20, 3, 3, 1, 30, 1, 20)''', (
+            VALUES (?, 10, 30, -10, 30, 1, 1, 3, 20, 3, 3, 1, 30)''', (
                 tg_id,)
                              )
             await db.commit()
