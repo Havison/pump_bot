@@ -82,8 +82,8 @@ async def symbol_bybit():
 
 
 async def symbol_binance():
-    await asyncio.sleep(4)
     try:
+        await asyncio.sleep(4)
         data_binance = []
         data_binance = [(symbol['symbol'], symbol['price'], 0, 0) for symbol in client.futures_symbol_ticker() if 'USDT' in symbol['symbol']]
         await db_binance(data_binance)
