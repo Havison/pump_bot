@@ -8,7 +8,6 @@ from aiogram.enums import ParseMode
 from handlers import user
 from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
-from database.database import db_start
 from services.signal_message import symbol_bybit, symbol_binance
 from cloud_pay.paymant import list_order
 
@@ -76,7 +75,7 @@ async def main():
 
 
     await set_main_menu(bot)
-    await db_start()
+
     dp.include_router(user.router)
 
 

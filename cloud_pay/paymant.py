@@ -131,20 +131,23 @@ order_list_paid = []
 
 
 async def list_order():
-    #try:
-    order_list = []
-    result = crypto.list_invoices(dt_end, dt_end, limit=100)
-    for i in result['result']:
-        if i not in order_list and i not in order_list_paid:
-            order_list.append(i)
-        if i['status'] == 'paid' and i not in order_list_paid:
-            await premium_setting(i['order_id'], '30')
-            order_list_paid.append(i)
-            datetime_obj = datetime.datetime.strptime(i['created'], '%Y-%m-%d %H:%M:%S.%f')
-            datetime_obj = pytz.utc.localize(datetime_obj)
-            datetime_now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
-            if datetime_obj < datetime_now:
-                order_list_paid.remove(i)
-    await asyncio.sleep(4)
-    # except Exception as e:
-    #     logger_pay.error(e)
+    try:
+        order_list = []
+        result = crypto.list_invoices(dt_end, dt_end, limit=100)
+        if result['result']:
+            for i in result['result']:
+                if i not in order_list and i not in order_list_paid:
+                    order_list.append(i)
+                if i['status'] == 'paid' and i not in order_list_paid:
+                    await premium_setting(i['order_id'], 30)
+                    order_list_paid.append(i)
+                    datetime_obj = datetime.datetime.strptime(i['created'], '%Y-%m-%d %H:%M:%S.%f')
+                    datetime_obj = pytz.utc.localize(datetime_obj)
+                    datetime_now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
+                    if datetime_obj < datetime_now:
+                        order_list_paid.remove(i)
+            await asyncio.sleep(4)
+        else:
+            pass
+    except Exception as e:
+        logger_pay.error(e)
