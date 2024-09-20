@@ -170,18 +170,17 @@ async def premium_user(tg_id):  #функция проверяет на подп
         today = datetime.datetime.now()
         db.execute('''SELECT date_prem FROM users WHERE (tg_id=%s and date_prem>%s)''',
                                    (tg_id, today))
-        premium = db.fetchone()[0]
+        premium = db.fetchone()
         if premium is None:
             return False
         else:
-            return premium
+            return premium[0]
 
 
 async def premium_setting(tg_id, days):
     with connect_db.cursor() as db:
         dt = datetime.datetime.now() + datetime.timedelta(days=days)
-        db.execute('''UPDATE users SET date_prem=%s) WHERE (tg_id=%s)''',
-                         (dt, tg_id))
+        db.execute('''UPDATE users SET date_prem=%s WHERE (tg_id=%s)''', (dt, tg_id))
         connect_db.commit()
 
 

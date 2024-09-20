@@ -425,8 +425,9 @@ async def prem_id(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMLongSort.admin))
 async def prem(message: Message, state: FSMContext):
     id_tg = message.text.split(' ')
-    await db.premium_setting(id_tg[0], id_tg[1])
+    print(id_tg)
     await state.clear()
+    await db.premium_setting(id_tg[0], int(id_tg[1]))
 
 
 
