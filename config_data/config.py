@@ -19,12 +19,21 @@ class Pay:
 
 
 @dataclass
+class Database:
+    host: str
+    user: str
+    password: str
+    database_type: str
+
+
+@dataclass
 class Config:
     tg_bot: TgBot
     by_bit: ByBit
     binance_key: ByBit
     tg_bot_long: TgBot
     pay: Pay
+    database: Database
 
 
 def load_config(path: str | None = None) -> Config:
@@ -51,5 +60,10 @@ def load_config(path: str | None = None) -> Config:
             api_key_cloud=env('API_KEY_CLOUD'),
             api_secret_cloud=env('API_SECRET_CLOUD')
         ),
+        database=Database(host=env('DATABASE_HOST'),
+                          user=env('DATABASE_USER'),
+                          password=env('DATABASE_PASSWORD'),
+                          database_type=env('DATABASE_TYPE')
+                          )
     )
 
