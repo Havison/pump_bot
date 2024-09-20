@@ -12,6 +12,7 @@ database = config.database.database_type
 
 try:
     connect_db = pymysql.connect(host=host, user=user, password=password, database=database)
+    print('Connected to MySQL')
 except Exception as e:
     print(e)
 
