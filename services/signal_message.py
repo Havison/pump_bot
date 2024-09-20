@@ -62,6 +62,7 @@ async def symbol_bybit():
                             q = await clear_quantity_signal(idt, symbol, 'bybit', 1)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_long(idt, a, symbol, setting['interval_pump'], q, qi_text[setting['interval_signal_pd']])
+                            await asyncio.sleep(2)
                 for i in user_price_interval_short[symbol]:
                     b = eval(f'({last_price} - {i}) / {last_price} * 100')
                     if b <= setting['quantity_short']:
@@ -69,6 +70,7 @@ async def symbol_bybit():
                             q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_short(idt, b, symbol, setting['intarval_short'], q, qi_text[setting['interval_signal_pd']])
+                            await asyncio.sleep(2)
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
@@ -106,6 +108,7 @@ async def symbol_binance():
                             q = await clear_quantity_signal(idt, symbol, 'binance', 1)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_long_binance(idt, a, symbol, setting['interval_pump'], q, qi_text[setting['interval_signal_pd']])
+                            await asyncio.sleep(2)
                 for i in user_price_interval_short[symbol]:
                     b = eval(f'({last_price} - {i}) / {last_price} * 100')
                     if b <= setting['quantity_short']:
@@ -113,6 +116,7 @@ async def symbol_binance():
                             q = await clear_quantity_signal(idt, symbol, 'binance', 0)
                             qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                             await message_short_binance(idt, b, symbol, setting['intarval_short'], q, qi_text[setting['interval_signal_pd']])
+                            await asyncio.sleep(2)
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
