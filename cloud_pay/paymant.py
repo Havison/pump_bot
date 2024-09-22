@@ -131,8 +131,8 @@ order_list_paid = []
 
 
 async def list_order():
+    order_list = []
     try:
-        order_list = []
         result = crypto.list_invoices(dt_end, dt_end, limit=100)
         if result['result']:
             for i in result['result']:
@@ -146,8 +146,10 @@ async def list_order():
                     datetime_now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
                     if datetime_obj < datetime_now:
                         order_list_paid.remove(i)
-            await asyncio.sleep(4)
-        else:
-            pass
+                await asyncio.sleep(4)
+            else:
+                pass
     except Exception as e:
         logger_pay.error(e)
+    await asyncio.sleep(4)
+
