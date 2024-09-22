@@ -80,6 +80,7 @@ async def db_binance(symbol):
         ?, ?, datetime('now'))''', symbol)
         await db.commit()
 
+
 async def db_create_user(tg_id, username):
     with connect_db.cursor() as db:
         result = db.execute('''SELECT * FROM users WHERE tg_id=%s''', (tg_id,))
