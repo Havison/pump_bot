@@ -37,9 +37,9 @@ async def countinues_taks_bybit():
         await symbol_bybit()
 
 
-async def countinues_taks_binance():
-    while True:
-        await symbol_binance()
+# async def countinues_taks_binance():
+#     while True:
+#         await symbol_binance()
 
 
 async def countinues_taks_pay():
@@ -62,7 +62,7 @@ async def main():
     config: Config = load_config('.env')
 
     task_bybit = asyncio.create_task(countinues_taks_bybit())
-    task_binance = asyncio.create_task(countinues_taks_binance())
+    # task_binance = asyncio.create_task(countinues_taks_binance())
     task_paymant = asyncio.create_task(countinues_taks_pay())
 
     # Инициализируем объект хранилища

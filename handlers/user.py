@@ -64,6 +64,7 @@ button_14 = KeyboardButton(text=LEXICON['/market'])
 button_15 = KeyboardButton(text=LEXICON['/bybit_off'])
 button_16 = KeyboardButton(text=LEXICON['/binance_off'])
 button_17 = KeyboardButton(text=LEXICON['/prem'])
+button_18 = KeyboardButton(text=LEXICON['/long'])
 
 
 # Создаем объект клавиатуры, добавляя в него кнопки

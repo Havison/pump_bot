@@ -12,6 +12,7 @@ class ByBit:
 class TgBot:
     token: str # Токен для доступа к телеграм-боту
 
+
 @dataclass
 class Pay:
     api_key_cloud: str

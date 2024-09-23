@@ -94,6 +94,9 @@ async def db_create_user(tg_id, username):
                              )
             db.execute('''INSERT INTO users_settings (tg_id) VALUES (%s)''', (tg_id,))
             connect_db.commit()
+            db.execute('''INSERT INTO setting_oi (tg_id) VALUES (%s)''', (tg_id,))
+            connect_db.commit()
+
 
 
 async def db_changes_long(tg_id, changes_long):
