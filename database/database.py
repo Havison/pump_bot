@@ -83,6 +83,7 @@ async def db_binance(symbol):
 
 async def db_create_user(tg_id, username):
     with connect_db.cursor() as db:
+        connect_db.commit()
         db.execute('''SELECT * FROM users WHERE tg_id=%s''', (tg_id,))
         result = db.fetchone()
         if not result:
@@ -230,6 +231,7 @@ async def clear_quantity_signal(tg_id, symbol, market, short):
 
 async def premium_user(tg_id):  #функция проверяет на подписку
     with connect_db.cursor() as db:
+        connect_db.commit()
         today = datetime.datetime.now()
         db.execute('''SELECT date_prem FROM users WHERE (tg_id=%s and date_prem>%s)''',
                                    (tg_id, today))
