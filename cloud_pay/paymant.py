@@ -146,7 +146,6 @@ async def list_order():
                     datetime_now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
                     if datetime_obj < datetime_now:
                         order_list_paid.remove(i)
-                await asyncio.sleep(4)
             else:
                 pass
     except Exception as e:
