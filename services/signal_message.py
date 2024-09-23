@@ -29,8 +29,15 @@ try:
 except Exception as e:
     logger2.error(e)
 
+
+async def binance():
+    try:
+        return Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
+    except:
+        await binance()
+
 try:
-    client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
+    client = binance()
 except Exception as e:
     logger2.error(e)
 
@@ -53,17 +60,16 @@ async def symbol_bybit():
 
 
 async def signal_bybit(idt, bybit_data):
-    setting = await db_setting_selection(idt)
     premium = await premium_user(idt)
     if not premium:
         return
     for data_symbol in bybit_data:
+        setting = await db_setting_selection(idt)
         signal_state = await state_signal(idt)
         if not signal_state[0]:
-            setting = await db_setting_selection(idt)
-            continue
+            return
         if not setting['bybit']:
-            continue
+            return
         symbol = data_symbol[0]
         last_price = data_symbol[1]
         user_price_interval = await long_interval_user(setting['interval_pump'], symbol)

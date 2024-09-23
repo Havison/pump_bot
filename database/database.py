@@ -1,13 +1,11 @@
 import datetime
+import pymysql
 import aiosqlite
 from config_data.config import Config, load_config
 
-config: Config = load_config('.env')
-connect_db = config.database.database_type
-
 
 async def db_start():
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         async with db.execute('''
             CREATE TABLE IF NOT EXISTS binance (
             symbol TEXT,
@@ -27,7 +25,7 @@ async def db_start():
 
         async with db.execute('''
             CREATE TABLE IF NOT EXISTS quantity_user_signal (
-            tg_id TEXT,
+            tg_id INTEGER,
             symbol TEXT,
             date_signal TEXT,
             market TEXT,
@@ -44,47 +42,23 @@ async def db_start():
             )
             ''') as cursor: pass
 
-        async with db.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-            tg_id INTEGER,
-            username TEXT,
-            date_prem TEXT
-            )
-            ''') as cursor: pass
 
-        async with db.execute('''
-            CREATE TABLE IF NOT EXISTS users_settings (
-            tg_id INTEGER,
-            quantity_pump INTEGER DEFAULT 10,
-            interval_pump INTEGER DEFAULT 30,
-            quantity_short INTEGER DEFAULT 10,
-            intarval_short INTEGER DEFAULT 30,
-            quatity_pump_min INTEGER DEFAULT 3,
-            intarval_pump_min INTEGER DEFAULT 3,
-            quatity_signal_pd INTEGER DEFAULT 1,
-            interval_signal_pd INTEGER DEFAULT 30,
-            quatity_signal_pm INTEGER DEFAULT 1,
-            intarval_signal_pm INTEGER DEFAULT 3,
-            stop_signal INTEGER DEFAULT 1,
-            binance INTEGER DEFAULT 1,
-            bybit INTEGER DEFAULT 1
-            )
-            ''') as cursor: pass
+config: Config = load_config('.env')
+user = config.database.user
+password = config.database.password
+host = config.database.host
+database = config.database.database_type
 
-        async with db.execute('''
-            CREATE TABLE IF NOT EXISTS setting_oi (
-            tg_id INTEGER,
-            quantity_oi INTEGER DEFAULT 3,
-            interval_oi INTEGER DEFAULT 20,
-            quantity_signal INTEGER DEFAULT 1,
-            interval_signal INTEGER DEFAULT 20,
-            stop_signal INTEGER DEFAULT 1
-            )
-            ''') as cursor: pass
+
+try:
+    connect_db = pymysql.connect(host=host, user=user, password=password, database=database)
+    print('Connected to MySQL')
+except Exception as e:
+    print(e)
 
 
 async def db_bybit(symbol):
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=240)
         await db.execute('''DELETE FROM bybit WHERE date_create<?''', (dt,))
         await db.commit()
@@ -95,7 +69,7 @@ async def db_bybit(symbol):
 
 
 async def db_binance(symbol):
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=240)
         await db.execute('''DELETE FROM binance WHERE date_create<?''', (dt,))
         await db.commit()
@@ -106,81 +80,80 @@ async def db_binance(symbol):
 
 
 async def db_create_user(tg_id, username):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.commit()
-        result = await db.execute('''SELECT * FROM users WHERE tg_id=?''', (tg_id,))
-        result = await result.fetchone()
+    with connect_db.cursor() as db:
+        db.execute('''SELECT * FROM users WHERE tg_id=%s''', (tg_id,))
+        result = db.fetchone()
         if not result:
-            dt = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3)
-            await db.execute('''INSERT INTO users (
+            dt = datetime.datetime.now() + datetime.timedelta(days=3)
+            db.execute('''INSERT INTO users (
             tg_id, username, date_prem)
             VALUES (
-            ?, ?, ?)''', (
+            %s, %s, %s)''', (
                 tg_id, username, dt)
                              )
-            await db.execute('''INSERT INTO users_settings (tg_id) VALUES (?)''', (tg_id,))
-            await db.commit()
-            await db.execute('''INSERT INTO setting_oi (tg_id) VALUES (?)''', (tg_id,))
-            await db.commit()
+            db.execute('''INSERT INTO users_settings (tg_id) VALUES (%s)''', (tg_id,))
+            connect_db.commit()
+            db.execute('''INSERT INTO setting_oi (tg_id) VALUES (%s)''', (tg_id,))
+            connect_db.commit()
+
 
 
 async def db_changes_long(tg_id, changes_long):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET quantity_pump=? WHERE tg_id=?''', (changes_long, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET quantity_pump=%s WHERE tg_id=%s''', (changes_long, tg_id))
+        connect_db.commit()
 
 
 async def db_interval_long(tg_id, interval_long):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET interval_pump=? WHERE tg_id=?''', (interval_long, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET interval_pump=%s WHERE tg_id=%s''', (interval_long, tg_id))
+        connect_db.commit()
 
 
 async def db_quantity_setting(tg_id, quantity_setting):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET quatity_signal_pd=? WHERE tg_id=?''', (quantity_setting, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET quatity_signal_pd=%s WHERE tg_id=%s''', (quantity_setting, tg_id))
+        connect_db.commit()
 
 
 async def db_quantity_interval(tg_id, quantity_interval):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET interval_signal_pd=? WHERE tg_id=?''', (quantity_interval, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET interval_signal_pd=%s WHERE tg_id=%s''', (quantity_interval, tg_id))
+        connect_db.commit()
 
 
 async def db_changes_short(tg_id, changes_short):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET quantity_short=? WHERE tg_id=?''', (changes_short, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET quantity_short=%s WHERE tg_id=%s''', (changes_short, tg_id))
+        connect_db.commit()
 
 
 async def db_interval_short(tg_id, interval_short):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET intarval_short=? WHERE tg_id=?''', (interval_short, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET intarval_short=%s WHERE tg_id=%s''', (interval_short, tg_id))
+        connect_db.commit()
 
 
 async def db_setting_selection(tg_id):
-    async with aiosqlite.connect(connect_db) as db:
-        value = await db.execute('''SELECT * FROM users_settings WHERE tg_id=?''', (tg_id, ))
-        value = await value.fetchone()
-
-        key = ('tg_id', 'quantity_pump', 'interval_pump', 'quantity_short', 'intarval_short', 'quatity_pump_min',
+    with connect_db.cursor() as db:
+        db.execute('''SELECT * FROM users_settings WHERE tg_id=%s''', tg_id)
+        value = db.fetchone()
+        key = ('quantity_pump', 'interval_pump', 'quantity_short', 'intarval_short', 'quatity_pump_min',
                'intarval_pump_min', 'quatity_signal_pd', 'interval_signal_pd', 'quatity_signal_pm',
-               'intarval_signal_pm', 'stop_signal', 'binance', 'bybit')
+               'intarval_signal_pm', 'stop_signal', 'tg_id', 'binance', 'bybit')
         result = dict(zip(key, value))
         return result
 
 
 async def user_id():
-    async with aiosqlite.connect(connect_db) as db:
-        result = await db.execute('''SELECT tg_id, date_prem FROM users''')
-        result = await result.fetchall()
+    with connect_db.cursor() as db:
+        db.execute('''SELECT tg_id, date_prem FROM users''')
+        result = db.fetchall()
         return result
 
 
 async def long_interval_user(interval_long, symbol):
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
         result = await db.execute('''SELECT last_prise FROM 
         bybit WHERE date_create>? and symbol=? ORDER BY date_create''', (added_date, symbol))
@@ -189,26 +162,26 @@ async def long_interval_user(interval_long, symbol):
 
 
 async def long_interval_user_binance(interval_long, symbol):
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
         result = await db.execute('''SELECT last_prise FROM 
-        binance WHERE date_create>? and symbol=? ORDER BY date_create''', (added_date, symbol))
+        binance WHERE date_create>? and symbol=?ORDER BY date_create''', (added_date, symbol))
         result = await result.fetchall()
         return result
 
 
 async def market_setting(tg_id, market, on_off):
-    async with aiosqlite.connect(connect_db) as db:
+    with connect_db.cursor() as db:
         if market == 'bybit':
-            await db.execute('''UPDATE users_settings SET bybit=? WHERE (tg_id=?)''', (on_off, tg_id))
-            await db.commit()
+            db.execute('''UPDATE users_settings SET bybit=%s WHERE (tg_id=%s)''', (on_off, tg_id))
+            connect_db.commit()
         elif market == 'binance':
-            await db.execute('''UPDATE users_settings SET binance=? WHERE (tg_id=?)''', (on_off, tg_id))
-            await db.commit()
+            db.execute('''UPDATE users_settings SET binance=%s WHERE (tg_id=%s)''', (on_off, tg_id))
+            connect_db.commit()
 
 
 async def quantity(tg_id, symbol, interval_user, market, short):
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         symbol_signal = await db.execute('''SELECT 1 FROM quantity_user_signal WHERE
         tg_id=? and symbol=? and market=? and short=?''', (tg_id, symbol, market, short))
         symbol_signal = await symbol_signal.fetchone()
@@ -240,7 +213,7 @@ async def quantity(tg_id, symbol, interval_user, market, short):
 
 
 async def clear_quantity_signal(tg_id, symbol, market, short):
-    async with aiosqlite.connect(connect_db) as db:
+    async with aiosqlite.connect('database/database.db') as db:
         dt_cl = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1440)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE
                 (tg_id=? and symbol=? and date_signal>? and market=? and short=?) ORDER BY date_signal''',
@@ -254,12 +227,11 @@ async def clear_quantity_signal(tg_id, symbol, market, short):
 
 
 async def premium_user(tg_id):  #функция проверяет на подписку
-    async with aiosqlite.connect(connect_db) as db:
-        await db.commit()
-        today = datetime.datetime.now(datetime.timezone.utc)
-        premium = await db.execute('''SELECT date_prem FROM users WHERE (tg_id=? and date_prem>?)''',
+    with connect_db.cursor() as db:
+        today = datetime.datetime.now()
+        db.execute('''SELECT date_prem FROM users WHERE (tg_id=%s and date_prem>%s)''',
                                    (tg_id, today))
-        premium = await premium.fetchone()
+        premium = db.fetchone()
         if premium is None:
             return False
         else:
@@ -267,21 +239,21 @@ async def premium_user(tg_id):  #функция проверяет на подп
 
 
 async def premium_setting(tg_id, days):
-    async with aiosqlite.connect(connect_db) as db:
-        dt = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)
-        await db.execute('''UPDATE users SET date_prem=? WHERE (tg_id=?)''', (dt, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        dt = datetime.datetime.now() + datetime.timedelta(days=days)
+        db.execute('''UPDATE users SET date_prem=%s WHERE (tg_id=%s)''', (dt, tg_id))
+        connect_db.commit()
 
 
 async def stop_signal(tg_id, state):
-    async with aiosqlite.connect(connect_db) as db:
-        await db.execute('''UPDATE users_settings SET stop_signal=? WHERE (tg_id=?)''', (state, tg_id))
-        await db.commit()
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET stop_signal=%s WHERE (tg_id=%s)''', (state, tg_id))
+        connect_db.commit()
 
 
 async def state_signal(tg_id):
-    async with aiosqlite.connect(connect_db) as db:
-        state_signal_user = await db.execute('''SELECT stop_signal FROM users_settings WHERE (tg_id=?)''',
+    with connect_db.cursor() as db:
+        db.execute('''SELECT stop_signal FROM users_settings WHERE (tg_id=%s)''',
                                    (tg_id, ))
-        state_signal_user = await state_signal_user.fetchone()
+        state_signal_user = db.fetchone()
         return state_signal_user
