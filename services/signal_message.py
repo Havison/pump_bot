@@ -57,8 +57,6 @@ async def signal_bybit(idt, bybit_data):
     premium = await premium_user(idt)
     if not premium:
         return
-    user_price_interval = await long_interval_user(setting['interval_pump'])
-    user_price_interval_short = await long_interval_user(setting['intarval_short'])
     for data_symbol in bybit_data:
         signal_state = await state_signal(idt)
         if not signal_state[0]:
@@ -68,8 +66,10 @@ async def signal_bybit(idt, bybit_data):
             continue
         symbol = data_symbol[0]
         last_price = data_symbol[1]
-        for i in user_price_interval[symbol]:
-            a = eval(f'({last_price} - {i}) / {last_price} * 100')
+        user_price_interval = await long_interval_user(setting['interval_pump'], symbol)
+        user_price_interval_short = await long_interval_user(setting['intarval_short'], symbol)
+        for i in user_price_interval:
+            a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
             if a >= setting['quantity_pump']:
                 if await quantity(idt, symbol, setting['interval_pump'], 'bybit', 1):
                     q = await clear_quantity_signal(idt, symbol, 'bybit', 1)
@@ -77,8 +77,8 @@ async def signal_bybit(idt, bybit_data):
                     await message_long(idt, a, symbol, setting['interval_pump'], q,
                                        qi_text[setting['interval_signal_pd']])
                     await asyncio.sleep(1)
-        for i in user_price_interval_short[symbol]:
-            b = eval(f'({last_price} - {i}) / {last_price} * 100')
+        for i in user_price_interval_short:
+            b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
             if b <= setting['quantity_short']:
                 if await quantity(idt, symbol, setting['intarval_short'], 'bybit', 0):
                     q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
@@ -107,12 +107,9 @@ async def symbol_binance():
 
 
 async def signal_binance(idt, binance_data):
-    setting = await db_setting_selection(idt)
     premium = await premium_user(idt)
     if not premium:
         return
-    user_price_interval = await long_interval_user_binance(setting['interval_pump'])
-    user_price_interval_short = await long_interval_user_binance(setting['intarval_short'])
     for data_b in binance_data:
         setting = await db_setting_selection(idt)
         symbol = data_b[0]
@@ -122,8 +119,10 @@ async def signal_binance(idt, binance_data):
             continue
         if not setting['binance']:
             continue
-        for i in user_price_interval[symbol]:
-            a = eval(f'({last_price} - {i}) / {last_price} * 100')
+        user_price_interval = await long_interval_user_binance(setting['interval_pump'], symbol)
+        user_price_interval_short = await long_interval_user_binance(setting['intarval_short'], symbol)
+        for i in user_price_interval:
+            a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
             if a >= setting['quantity_pump']:
                 if await quantity(idt, symbol, setting['interval_pump'], 'binance', 1):
                     q = await clear_quantity_signal(idt, symbol, 'binance', 1)
@@ -131,8 +130,8 @@ async def signal_binance(idt, binance_data):
                     await message_long_binance(idt, a, symbol, setting['interval_pump'], q,
                                                qi_text[setting['interval_signal_pd']])
                     await asyncio.sleep(1)
-        for i in user_price_interval_short[symbol]:
-            b = eval(f'({last_price} - {i}) / {last_price} * 100')
+        for i in user_price_interval_short:
+            b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
             if b <= setting['quantity_short']:
                 if await quantity(idt, symbol, setting['intarval_short'], 'binance', 0):
                     q = await clear_quantity_signal(idt, symbol, 'binance', 0)

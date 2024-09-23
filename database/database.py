@@ -153,28 +153,22 @@ async def user_id():
         return result
 
 
-async def long_interval_user(interval_long):
+async def long_interval_user(interval_long, symbol):
     async with aiosqlite.connect('database/database.db') as db:
-        symbol = {}
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
-        result = await db.execute('''SELECT symbol, last_prise FROM 
-        bybit WHERE date_create>? ORDER BY date_create''', (added_date, ))
+        result = await db.execute('''SELECT last_prise FROM 
+        bybit WHERE date_create>? and symbol=? ORDER BY date_create''', (added_date, symbol))
         result = await result.fetchall()
-        for i in result:
-            symbol.setdefault(i[0], []).append(i[1])
-        return symbol
+        return result
 
 
-async def long_interval_user_binance(interval_long):
+async def long_interval_user_binance(interval_long, symbol):
     async with aiosqlite.connect('database/database.db') as db:
-        symbol = {}
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
-        result = await db.execute('''SELECT symbol, last_prise FROM 
-        binance WHERE date_create>? ORDER BY date_create''', (added_date, ))
+        result = await db.execute('''SELECT last_prise FROM 
+        binance WHERE date_create>? and symbol=?ORDER BY date_create''', (added_date, symbol))
         result = await result.fetchall()
-        for i in result:
-            symbol.setdefault(i[0], []).append(i[1])
-        return symbol
+        return result
 
 
 async def market_setting(tg_id, market, on_off):
