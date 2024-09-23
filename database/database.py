@@ -83,7 +83,8 @@ async def db_binance(symbol):
 
 async def db_create_user(tg_id, username):
     with connect_db.cursor() as db:
-        result = db.execute('''SELECT * FROM users WHERE tg_id=%s''', (tg_id,))
+        db.execute('''SELECT * FROM users WHERE tg_id=%s''', (tg_id,))
+        result = db.fetchone()
         if not result:
             dt = datetime.datetime.now() + datetime.timedelta(days=3)
             db.execute('''INSERT INTO users (
