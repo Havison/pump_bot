@@ -30,19 +30,8 @@ except Exception as e:
     logger2.error(e)
 
 
-async def binance():
-    try:
-        return Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
-    except:
-        await binance()
-
-try:
-    client = binance()
-except Exception as e:
-    logger2.error(e)
-
-
 async def symbol_bybit():
+    print('я тут')
     try:
         await asyncio.sleep(2)
         data = session.get_tickers(category="linear")
@@ -96,6 +85,7 @@ async def signal_bybit(idt, bybit_data):
 
 async def symbol_binance():
     try:
+        client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
         await asyncio.sleep(2)
         data_binance = client.futures_symbol_ticker()
         binance_data = []
