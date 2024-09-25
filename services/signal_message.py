@@ -1,5 +1,4 @@
 import asyncio
-
 import logging
 from pybit.unified_trading import HTTP
 from binance.client import Client
@@ -31,7 +30,6 @@ except Exception as e:
 
 
 async def symbol_bybit():
-    await asyncio.sleep(2)
     try:
         data = session.get_tickers(category="linear")
         bybit_data = []
@@ -40,17 +38,17 @@ async def symbol_bybit():
                 bybit_data.append((dicts['symbol'], dicts['lastPrice'], dicts['openInterest']))
         await db_bybit(bybit_data)
         user = await user_id()
-        tg_id_user = [signal_bybit(i[0], bybit_data) for i in user]
-        await asyncio.gather(*tg_id_user)
+        user_iter = [i[0] for i in user if await premium_user(i[0])][:30]
+        while user_iter:
+            tg_id_user = [signal_bybit(user, bybit_data) for user in user_iter[:5]]
+            await asyncio.gather(*tg_id_user)
+            user_iter = user_iter[5:]
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
 
 
 async def signal_bybit(idt, bybit_data):
-    premium = await premium_user(idt)
-    if not premium:
-        return
     for data_symbol in bybit_data:
         setting = await db_setting_selection(idt)
         signal_state = await state_signal(idt)
@@ -83,7 +81,6 @@ async def signal_bybit(idt, bybit_data):
 
 
 async def symbol_binance():
-    await asyncio.sleep(2)
     try:
         client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
         data_binance = client.futures_symbol_ticker()
@@ -93,18 +90,18 @@ async def symbol_binance():
                 binance_data.append((symbol['symbol'], symbol['price']))
         await db_binance(binance_data)
         user = await user_id()
-        tg_id_user = [i[0] for i in user]
-        task = [signal_binance(idt, binance_data) for idt in tg_id_user]
-        await asyncio.gather(*task)
+        user_iter = [i[0] for i in user if await premium_user(i[0])][:30]
+        while user_iter:
+            tg_id_user = [signal_binance(user, binance_data) for user in user_iter[:5]]
+            await asyncio.gather(*tg_id_user)
+            user_iter = user_iter[5:]
     except Exception as e:
         logger2.error(e)
-        await asyncio.sleep(2)
+        await asyncio.sleep(4)
 
 
 async def signal_binance(idt, binance_data):
-    premium = await premium_user(idt)
-    if not premium:
-        return
+    print(idt)
     for data_b in binance_data:
         setting = await db_setting_selection(idt)
         symbol = data_b[0]
@@ -113,7 +110,7 @@ async def signal_binance(idt, binance_data):
         if not signal_state[0]:
             continue
         if not setting['binance']:
-            continue
+            return
         user_price_interval = await long_interval_user_binance(setting['interval_pump'], symbol)
         user_price_interval_short = await long_interval_user_binance(setting['intarval_short'], symbol)
         for i in user_price_interval:
@@ -134,16 +131,3 @@ async def signal_binance(idt, binance_data):
                     await message_short_binance(idt, b, symbol, setting['intarval_short'], q,
                                                 qi_text[setting['interval_signal_pd']])
                     await asyncio.sleep(1)
-
-
-
-
-
-
-
-
-
-
-
-
-
