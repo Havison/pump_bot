@@ -31,9 +31,8 @@ except Exception as e:
 
 
 async def symbol_bybit():
-    print('я тут')
+    await asyncio.sleep(2)
     try:
-        await asyncio.sleep(2)
         data = session.get_tickers(category="linear")
         bybit_data = []
         for dicts in data['result']['list']:
@@ -84,9 +83,9 @@ async def signal_bybit(idt, bybit_data):
 
 
 async def symbol_binance():
+    await asyncio.sleep(2)
     try:
         client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
-        await asyncio.sleep(2)
         data_binance = client.futures_symbol_ticker()
         binance_data = []
         for symbol in data_binance:
@@ -99,7 +98,7 @@ async def symbol_binance():
         await asyncio.gather(*task)
     except Exception as e:
         logger2.error(e)
-        await asyncio.sleep(4)
+        await asyncio.sleep(2)
 
 
 async def signal_binance(idt, binance_data):
