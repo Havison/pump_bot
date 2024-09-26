@@ -384,7 +384,7 @@ async def message_short(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
                                                f'<b>⚫ByBit</b>\n'
                                                f'Изменения за {interval} минут\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
-                                               f'&#129535;Количество сигналов за {qi}: <b>{q}</b>\n'
+                                               f'&#129535;Кол-во сигналов за {qi}: <b>{q}</b>\n'
                                                f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{binance}\">Binance</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
@@ -397,7 +397,7 @@ async def message_long_binance(tg_id, lp, symbol, interval, q, qi='За 24 ча�
                                                f'<b>🟡Binance</b>\n'
                                                f'<b>Изменения за {interval} минут</b>\n'
                                                f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
-                                               f'&#129535;Количество сигналов {qi}: <b>{q}</b>\n'
+                                               f'&#129535;Кол-во сигналов {qi}: <b>{q}</b>\n'
                                                f'<a href=\"{binance}\">Binance</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{bybit}\">ByBit</a>',
                            parse_mode='HTML', disable_web_page_preview=True)
 
