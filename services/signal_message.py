@@ -51,9 +51,10 @@ async def symbol_bybit():
 
 
 async def signal_bybit(idt, bybit_data):
-    symbol_signal = [user_signal_bybit(idt, i) for i in bybit_data]
-    await asyncio.gather(*symbol_signal)
-
+    while bybit_data:
+        symbol_signal = [user_signal_bybit(idt, i) for i in bybit_data[:10]]
+        await asyncio.gather(*symbol_signal)
+        bybit_data = bybit_data[10:]
 
 async def user_signal_bybit(idt, data_symbol):
     setting = await db_setting_selection(idt)
