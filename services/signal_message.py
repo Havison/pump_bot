@@ -101,7 +101,6 @@ async def symbol_binance():
 
 
 async def signal_binance(idt, binance_data):
-    print(idt)
     for data_b in binance_data:
         setting = await db_setting_selection(idt)
         symbol = data_b[0]
