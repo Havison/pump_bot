@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from datetime import datetime
+
 from pybit.unified_trading import HTTP
 from binance.client import Client
 from config_data.config import Config, load_config
@@ -38,7 +40,7 @@ async def symbol_bybit():
                 bybit_data.append((dicts['symbol'], dicts['lastPrice'], dicts['openInterest']))
         await db_bybit(bybit_data)
         user = await user_id()
-        user_iter = [i[0] for i in user if await premium_user(i[0])][:30]
+        user_iter = [i[0] for i in user if await premium_user(i[0])]
         while user_iter:
             tg_id_user = [signal_bybit(user, bybit_data) for user in user_iter[:5]]
             await asyncio.gather(*tg_id_user)
@@ -49,35 +51,39 @@ async def symbol_bybit():
 
 
 async def signal_bybit(idt, bybit_data):
-    for data_symbol in bybit_data:
-        setting = await db_setting_selection(idt)
-        signal_state = await state_signal(idt)
-        if not signal_state[0]:
-            return
-        if not setting['bybit']:
-            return
-        symbol = data_symbol[0]
-        last_price = data_symbol[1]
-        user_price_interval = await long_interval_user(setting['interval_pump'], symbol)
-        user_price_interval_short = await long_interval_user(setting['intarval_short'], symbol)
-        for i in user_price_interval:
-            a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-            if a >= setting['quantity_pump']:
-                if await quantity(idt, symbol, setting['interval_pump'], 'bybit', 1):
-                    q = await clear_quantity_signal(idt, symbol, 'bybit', 1)
-                    qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
-                    await message_long(idt, a, symbol, setting['interval_pump'], q,
-                                       qi_text[setting['interval_signal_pd']])
-                    await asyncio.sleep(1)
-        for i in user_price_interval_short:
-            b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-            if b <= setting['quantity_short']:
-                if await quantity(idt, symbol, setting['intarval_short'], 'bybit', 0):
-                    q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
-                    qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
-                    await message_short(idt, b, symbol, setting['intarval_short'], q,
-                                        qi_text[setting['interval_signal_pd']])
-                    await asyncio.sleep(1)
+    symbol_signal = [user_signal_bybit(idt, i) for i in bybit_data]
+    await asyncio.gather(*symbol_signal)
+
+
+async def user_signal_bybit(idt, data_symbol):
+    setting = await db_setting_selection(idt)
+    signal_state = await state_signal(idt)
+    if not signal_state[0]:
+        return
+    if not setting['bybit']:
+        return
+    symbol = data_symbol[0]
+    last_price = data_symbol[1]
+    user_price_interval = await long_interval_user(setting['interval_pump'], symbol)
+    user_price_interval_short = await long_interval_user(setting['intarval_short'], symbol)
+    for i in user_price_interval:
+        a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+        if a >= setting['quantity_pump']:
+            if await quantity(idt, symbol, setting['interval_pump'], 'bybit', 1):
+                q = await clear_quantity_signal(idt, symbol, 'bybit', 1)
+                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                await message_long(idt, a, symbol, setting['interval_pump'], q,
+                                   qi_text[setting['interval_signal_pd']])
+                await asyncio.sleep(1)
+    for i in user_price_interval_short:
+        b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+        if b <= setting['quantity_short']:
+            if await quantity(idt, symbol, setting['intarval_short'], 'bybit', 0):
+                q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
+                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                await message_short(idt, b, symbol, setting['intarval_short'], q,
+                                    qi_text[setting['interval_signal_pd']])
+                await asyncio.sleep(1)
 
 
 async def symbol_binance():
