@@ -2,7 +2,7 @@ from aiogram import F, Router, Bot
 import logging
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
@@ -98,12 +98,16 @@ async def setting_status(tg_id):
             quantity_text=quantity_text_limit)
 
 
-@router.message(CommandStart(), StateFilter(default_state))  # Этот хэндлер срабатывает на команду /start
-async def process_start_command(message: Message):
+@router.message(CommandStart())  # Этот хэндлер срабатывает на команду /start
+async def process_start_command(message: Message, state: FSMContext):
     await db.db_create_user(message.from_user.id, message.from_user.username)
     await message.answer(text=LEXICON['/start'],
                          reply_markup=keyboard_button)
+    await state.clear()
+    await db.stop_signal(message.from_user.id, 1)
 
+
+@router.message(Command(commands='pay'))
 @router.message(F.text == LEXICON['/prem'], StateFilter(default_state))
 async def process_prem(message: Message):
     prm_date = await db.premium_user(message.from_user.id)
@@ -120,13 +124,22 @@ async def process_prem(message: Message):
         }
         ordder = create_invoice.create_invoice(data)
         t = ordder['result']['link']
-        button_inlaite = InlineKeyboardButton(text=LEXICON['pay'], url=t)
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[[button_inlaite]])
+        button_inlaite_1 = InlineKeyboardButton(text=LEXICON['pay'], url=t)
+        button_inlaite_2 = InlineKeyboardButton(text=LEXICON['free_play'], callback_data=LEXICON['free_play'])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[button_inlaite_1], [button_inlaite_2]])
         await message.answer(
             text=LEXICON_TEXT['pay_30'],
             reply_markup=keyboard
             )
 
+
+@router.callback_query(F.data == LEXICON['free_play'], StateFilter(default_state))
+async def process_free_play(callback: CallbackQuery):
+    free_prem = await db.free_premium_user(callback.from_user.id)
+    if free_prem:
+        await callback.message.answer(text=LEXICON_TEXT['free_play'])
+    else:
+        await callback.message.answer(text=LEXICON_TEXT['free_play_on'])
 
 
 @router.message(F.text == LEXICON['/chanel'])
@@ -137,14 +150,16 @@ async def process_chanel_press(message: Message, state: FSMContext):
     await db.stop_signal(message.from_user.id, 1)
 
 
-@router.message(Command(commands='help'), StateFilter(default_state))
+@router.message(Command(commands='help'))
 @router.message(F.text == LEXICON['/help'], StateFilter(default_state))# Этот хэндлер срабатывает на команду /help
-async def process_help_command(message: Message):
+async def process_help_command(message: Message, state: FSMContext):
     await message.answer(text=LEXICON_TEXT['help'], reply_markup=keyboard_button)
+    await state.clear()
+    await db.stop_signal(message.from_user.id, 1)
 
 
-@router.message(Command(commands='reset'), StateFilter(default_state))
-async def process_reset_command(message: Message):
+@router.message(Command(commands='reset'))
+async def process_reset_command(message: Message, state: FSMContext):
     prm_date = await db.premium_user(message.from_user.id)
     if not prm_date:
         await message.answer(text=LEXICON_TEXT['fail_premium'], reply_markup=keyboard_button)
@@ -157,18 +172,34 @@ async def process_reset_command(message: Message):
         await db.db_quantity_setting(message.from_user.id, 1)
         t = await setting_status(message.from_user.id)
         await message.answer(text=t, reply_markup=keyboard_button)
+    await state.clear()
+    await db.stop_signal(message.from_user.id, 1)
 
 
-@router.message(F.text == LEXICON['/setting'], StateFilter(default_state))
-@router.message(Command(commands='setting'),
-                StateFilter(default_state))  # Этот хэндлер срабатывает на команду /setting
-async def process_settings_command(message: Message):
+@router.message(Command(commands='profile'))
+@router.message(F.text == LEXICON['/profile'], StateFilter(default_state))
+async def time_premium(message: Message, state: FSMContext):
+    prm_date = await db.premium_user(message.from_user.id)
+    if not prm_date:
+        await message.answer(text=LEXICON_TEXT['fail_premium'], reply_markup=keyboard_button)
+    else:
+        await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date), reply_markup=keyboard_button)
+    await state.clear()
+    await db.stop_signal(message.from_user.id, 1)
+
+
+@router.message(Command(commands='setting'))
+@router.message(F.text == LEXICON['/setting'], StateFilter(default_state))  # Этот хэндлер срабатывает на команду /setting
+async def process_settings_command(message: Message, state: FSMContext):
     prm_date = await db.premium_user(message.from_user.id)
     if not prm_date:
         await message.answer(text=LEXICON_TEXT['fail_premium'])
     else:
         t = await setting_status(message.from_user.id)
         await message.answer(text=t, reply_markup=keyboard_button_setting)
+    await state.clear()
+    await db.stop_signal(message.from_user.id, 1)
+
 
 @router.message(F.text == LEXICON['/pump'], StateFilter(default_state))
 async def process_long_press(message: Message, state: FSMContext):
@@ -182,7 +213,8 @@ async def process_long_press(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMLongSort.changes_long),
                 lambda x: x.text.isdigit() and 1 <= int(x.text) <= 9999)
 async def long_setting_changes(message: Message, state: FSMContext):
-    await db.db_changes_long(message.from_user.id, int(message.text))
+    changes_long = int(message.text)
+    await state.update_data(changes_long=changes_long)
     await message.answer(text=LEXICON_TEXT['setting_interval'])
     await state.set_state(FSMLongSort.interval_long)
 
@@ -190,6 +222,9 @@ async def long_setting_changes(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMLongSort.interval_long),
                 lambda x: x.text.isdigit() and 1 <= int(x.text) <= 240)
 async def long_setting_interval(message: Message, state: FSMContext):
+    data = await state.get_data()
+    changes_long = data['changes_long']
+    await db.db_changes_long(message.from_user.id, changes_long)
     await db.db_interval_long(message.from_user.id, int(message.text))
     t = await setting_status(message.from_user.id)
     await message.answer(text=t, reply_markup=keyboard_button)
@@ -207,14 +242,14 @@ async def process_short_press(message: Message, state: FSMContext):
     await message.answer(
         text=LEXICON_TEXT['short_setting_changes'], reply_markup=keyboard_button_chanel)
     await db.stop_signal(message.from_user.id, 0)
-    #устаналиваем состояние вводе роста
     await state.set_state(FSMLongSort.changes_short)
 
 
 @router.message(StateFilter(FSMLongSort.changes_short),
                 lambda x: x.text.isdigit() and 1 <= int(x.text) <= 9999)
 async def short_setting_changes(message: Message, state: FSMContext):
-    await db.db_changes_short(message.from_user.id, int('-' + message.text))
+    changes_short = int('-' + message.text)
+    await state.update_data(changes_short=changes_short)
     await message.answer(text=LEXICON_TEXT['setting_interval'])
     await state.set_state(FSMLongSort.interval_short)
 
@@ -222,6 +257,9 @@ async def short_setting_changes(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMLongSort.interval_short),
                 lambda x: x.text.isdigit() and 1 <= int(x.text) <= 240)
 async def long_setting_interval(message: Message, state: FSMContext):
+    data = await state.get_data()
+    changes_short = data['changes_short']
+    await db.db_changes_short(message.from_user.id, changes_short)
     await db.db_interval_short(message.from_user.id, int(message.text))
     t = await setting_status(message.from_user.id)
     await message.answer(text=t, reply_markup=keyboard_button)
@@ -244,7 +282,6 @@ async def warning_interval(message: Message):
 async def process_short_press(message: Message, state: FSMContext):
     await message.answer(
         text=LEXICON_TEXT['quantity_interval'], reply_markup=keyboard_button_quantity)
-    #устаналиваем состояние вводе роста
     await db.stop_signal(message.from_user.id, 0)
     await state.set_state(FSMLongSort.quantity_interval)
 
@@ -264,24 +301,27 @@ async def quantity_interval_setting(message: Message, state: FSMContext):
         await state.clear()
     if message.text == LEXICON['/hours_24']:
         qi = 24 * 60
-        await db.db_quantity_interval(message.from_user.id, qi)
-        await message.answer(text=LEXICON_TEXT['quantity_setting'], reply_markup=ReplyKeyboardRemove())
+        await state.update_data(qi=qi)
+        await message.answer(text=LEXICON_TEXT['quantity_setting'], reply_markup=keyboard_button_chanel)
         await state.set_state(FSMLongSort.quantity_setting)
     if message.text == LEXICON['/hours_12']:
         qi = 12 * 60
-        await db.db_quantity_interval(message.from_user.id, qi)
-        await message.answer(text=LEXICON_TEXT['quantity_setting'], reply_markup=ReplyKeyboardRemove())
+        await state.update_data(qi=qi)
+        await message.answer(text=LEXICON_TEXT['quantity_setting'], reply_markup=keyboard_button_chanel)
         await state.set_state(FSMLongSort.quantity_setting)
     if message.text == LEXICON['/hours_6']:
         qi = 6 * 60
-        await db.db_quantity_interval(message.from_user.id, qi)
-        await message.answer(text=LEXICON_TEXT['quantity_setting'], reply_markup=ReplyKeyboardRemove())
+        await state.update_data(qi=qi)
+        await message.answer(text=LEXICON_TEXT['quantity_setting'], reply_markup=keyboard_button_chanel)
         await state.set_state(FSMLongSort.quantity_setting)
 
 
 @router.message(StateFilter(FSMLongSort.quantity_setting),
                 lambda x: x.text.isdigit() and 1 <= int(x.text))
 async def quantity_setting(message: Message, state: FSMContext):
+    data = await state.get_data()
+    qi = data['qi']
+    await db.db_quantity_interval(message.from_user.id, qi)
     await db.db_quantity_setting(message.from_user.id, int(message.text))
     t = await setting_status(message.from_user.id)
     await message.answer(text=t, reply_markup=keyboard_button)
@@ -294,15 +334,6 @@ async def quantity_setting(message: Message, state: FSMContext):
 async def quantity_warning(message: Message):
     await message.answer(text=LEXICON_TEXT['quantity_warning'])
 
-
-@router.message(F.text == LEXICON['/profile'], StateFilter(default_state))
-@router.message(Command(commands='profile'), StateFilter(default_state))
-async def time_premium(message: Message):
-    prm_date = await db.premium_user(message.from_user.id)
-    if not prm_date:
-        await message.answer(text=LEXICON_TEXT['fail_premium'], reply_markup=keyboard_button)
-    else:
-        await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date), reply_markup=keyboard_button)
 
 async def message_long(tg_id, lp, symbol, interval, q, qi='За 24 часа'):
     coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
@@ -343,7 +374,6 @@ async def press_market(message: Message):
             resize_keyboard=True))
 
 
-
 @router.message(F.text == LEXICON['/bybit'], StateFilter(default_state))
 @router.message(F.text == LEXICON['/bybit_off'], StateFilter(default_state))
 async def bybit_off(message: Message):
@@ -357,8 +387,6 @@ async def bybit_off(message: Message):
         await press_market(message)
 
 
-
-
 @router.message(F.text == LEXICON['/binance'], StateFilter(default_state))
 @router.message(F.text == LEXICON['/binance_off'], StateFilter(default_state))
 async def bybit_off(message: Message):
@@ -370,10 +398,6 @@ async def bybit_off(message: Message):
     else:
         await db.market_setting(message.from_user.id, 'binance', 1)
         await press_market(message)
-
-
-
-
 
 
 async def message_short(tg_id, lp, symbol, interval, q, qi='За 24 часа'):

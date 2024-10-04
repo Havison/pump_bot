@@ -78,6 +78,7 @@ async def main():
     await set_main_menu(bot)
     await db_start()
 
+
     dp.include_router(user.router)
 
 
@@ -96,3 +97,5 @@ asyncio.run(main())
 # Регистрируем миддлвари
 #logger.info('Подключаем миддлвари')
 # ...
+
+

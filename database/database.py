@@ -2,6 +2,7 @@ import datetime
 import pymysql
 import aiosqlite
 from config_data.config import Config, load_config
+import asyncio
 
 
 async def db_start():
@@ -84,18 +85,13 @@ async def db_create_user(tg_id, username):
         db.execute('''SELECT * FROM users WHERE tg_id=%s''', (tg_id,))
         result = db.fetchone()
         if not result:
-            dt = datetime.datetime.now() + datetime.timedelta(days=3)
+            dt = datetime.datetime.now()
             db.execute('''INSERT INTO users (
             tg_id, username, date_prem)
             VALUES (
             %s, %s, %s)''', (
                 tg_id, username, dt)
                              )
-            db.execute('''INSERT INTO users_settings (tg_id) VALUES (%s)''', (tg_id,))
-            connect_db.commit()
-            db.execute('''INSERT INTO setting_oi (tg_id) VALUES (%s)''', (tg_id,))
-            connect_db.commit()
-
 
 
 async def db_changes_long(tg_id, changes_long):
@@ -229,21 +225,72 @@ async def clear_quantity_signal(tg_id, symbol, market, short):
 async def premium_user(tg_id):  #функция проверяет на подписку
     with connect_db.cursor() as db:
         connect_db.commit()
-        today = datetime.datetime.now()
-        db.execute('''SELECT date_prem FROM users WHERE (tg_id=%s and date_prem>%s)''',
-                                   (tg_id, today))
+        db.execute('''SELECT tg_id, data_prem FROM users_prem WHERE (tg_id=%s)''',
+                                   (tg_id, ))
         premium = db.fetchone()
-        if premium is None:
-            return False
+        if premium:
+            return premium[1]
         else:
-            return premium[0]
+            return False
+
+
+async def list_premium():
+    with connect_db.cursor() as db:
+        await clear_premium()
+        connect_db.commit()
+        db.execute('''SELECT tg_id FROM users_prem''')
+        users = db.fetchall()
+        return users
+
+
+async def free_premium_user(tg_id):
+    with connect_db.cursor() as db:
+        connect_db.commit()
+        db.execute('''SELECT tg_id FROM free_prem WHERE tg_id=%s''', (tg_id, ))
+        free_premium = db.fetchone()
+        if free_premium:
+            return True
+        else:
+            db.execute('''INSERT INTO free_prem (tg_id) VALUES (%s)''', (tg_id,))
+            connect_db.commit()
+            await premium_setting(tg_id, 2)
+            return False
+
+
+async def clear_premium():
+    with connect_db.cursor() as db:
+        connect_db.commit()
+        today = datetime.datetime.now()
+        db.execute('''SELECT tg_id FROM users_prem WHERE (data_prem<%s)''',
+                                   (today, ))
+        premium = db.fetchall()
+        if premium:
+            for i in premium:
+                db.execute('''DELETE FROM users_prem WHERE tg_id=%s''', (i,))
+                connect_db.commit()
+                db.execute('''DELETE FROM users_settings WHERE tg_id=%s''', (i,))
+                connect_db.commit()
+                db.execute('''DELETE FROM setting_oi WHERE tg_id=%s''', (i,))
+                connect_db.commit()
+
 
 
 async def premium_setting(tg_id, days):
     with connect_db.cursor() as db:
-        dt = datetime.datetime.now() + datetime.timedelta(days=days)
-        db.execute('''UPDATE users SET date_prem=%s WHERE (tg_id=%s)''', (dt, tg_id))
-        connect_db.commit()
+        db.execute('''SELECT tg_id, data_prem FROM users_prem WHERE (tg_id=%s)''', (tg_id, ))
+        premium = db.fetchone()
+        if premium:
+            dt = premium[1] + datetime.timedelta(days=days)
+            db.execute('''UPDATE users_prem SET date_prem=%s WHERE (tg_id=%s)''', (dt, tg_id))
+            connect_db.commit()
+        else:
+            dt = datetime.datetime.now() + datetime.timedelta(days=days)
+            db.execute('''INSERT INTO users_prem (tg_id, data_prem) VALUES (%s, %s)''', (tg_id, dt))
+            connect_db.commit()
+            db.execute('''INSERT INTO users_settings (tg_id) VALUES (%s)''', (tg_id,))
+            connect_db.commit()
+            db.execute('''INSERT INTO setting_oi (tg_id) VALUES (%s)''', (tg_id,))
+            connect_db.commit()
 
 
 async def stop_signal(tg_id, state):

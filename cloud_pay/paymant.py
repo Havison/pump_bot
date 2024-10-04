@@ -134,7 +134,7 @@ async def list_order():
     order_list = []
     try:
         result = crypto.list_invoices(dt_end, dt_end, limit=100)
-        if result['result']:
+        if result:
             for i in result['result']:
                 if i not in order_list and i not in order_list_paid:
                     order_list.append(i)

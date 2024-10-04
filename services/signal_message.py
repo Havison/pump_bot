@@ -5,7 +5,7 @@ from datetime import datetime
 from pybit.unified_trading import HTTP
 from binance.client import Client
 from config_data.config import Config, load_config
-from database.database import (user_id, long_interval_user, quantity, clear_quantity_signal, premium_user, long_interval_user_binance, db_setting_selection, state_signal, db_bybit, db_binance)
+from database.database import (user_id, long_interval_user, quantity, clear_quantity_signal, premium_user, long_interval_user_binance, db_setting_selection, state_signal, db_bybit, db_binance, list_premium)
 
 from handlers.user import message_long, message_short, message_short_binance, message_long_binance
 
@@ -39,8 +39,8 @@ async def symbol_bybit():
             if 'USDT' in dicts['symbol']:
                 bybit_data.append((dicts['symbol'], dicts['lastPrice'], dicts['openInterest']))
         await db_bybit(bybit_data)
-        user = await user_id()
-        user_iter = [i[0] for i in user if await premium_user(i[0])]
+        user = await list_premium()
+        user_iter = [i[0] for i in user]
         while user_iter:
             tg_id_user = [signal_bybit(user, bybit_data) for user in user_iter[:5]]
             await asyncio.gather(*tg_id_user)
@@ -55,6 +55,7 @@ async def signal_bybit(idt, bybit_data):
         symbol_signal = [user_signal_bybit(idt, i) for i in bybit_data[:5]]
         await asyncio.gather(*symbol_signal)
         bybit_data = bybit_data[5:]
+
 
 async def user_signal_bybit(idt, data_symbol):
     setting = await db_setting_selection(idt)
@@ -97,7 +98,7 @@ async def symbol_binance():
                 binance_data.append((symbol['symbol'], symbol['price']))
         await db_binance(binance_data)
         user = await user_id()
-        user_iter = [i[0] for i in user if await premium_user(i[0])][:30]
+        user_iter = [i[0] for i in user if await premium_user(i[0])]
         while user_iter:
             tg_id_user = [signal_binance(user, binance_data) for user in user_iter[:5]]
             await asyncio.gather(*tg_id_user)
@@ -108,32 +109,38 @@ async def symbol_binance():
 
 
 async def signal_binance(idt, binance_data):
-    for data_b in binance_data:
-        setting = await db_setting_selection(idt)
-        symbol = data_b[0]
-        last_price = data_b[1]
-        signal_state = await state_signal(idt)
-        if not signal_state[0]:
-            continue
-        if not setting['binance']:
-            return
-        user_price_interval = await long_interval_user_binance(setting['interval_pump'], symbol)
-        user_price_interval_short = await long_interval_user_binance(setting['intarval_short'], symbol)
-        for i in user_price_interval:
-            a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-            if a >= setting['quantity_pump']:
-                if await quantity(idt, symbol, setting['interval_pump'], 'binance', 1):
-                    q = await clear_quantity_signal(idt, symbol, 'binance', 1)
-                    qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
-                    await message_long_binance(idt, a, symbol, setting['interval_pump'], q,
-                                               qi_text[setting['interval_signal_pd']])
-                    await asyncio.sleep(1)
-        for i in user_price_interval_short:
-            b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-            if b <= setting['quantity_short']:
-                if await quantity(idt, symbol, setting['intarval_short'], 'binance', 0):
-                    q = await clear_quantity_signal(idt, symbol, 'binance', 0)
-                    qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
-                    await message_short_binance(idt, b, symbol, setting['intarval_short'], q,
-                                                qi_text[setting['interval_signal_pd']])
-                    await asyncio.sleep(1)
+    while binance_data:
+        symbol_signal = [user_binance_signal(idt, i) for i in binance_data[:5]]
+        await asyncio.gather(*symbol_signal)
+        binance_data = binance_data[5:]
+
+
+async def user_binance_signal(idt, data_b):
+    setting = await db_setting_selection(idt)
+    signal_state = await state_signal(idt)
+    symbol = data_b[0]
+    last_price = data_b[1]
+    if not signal_state[0]:
+        return
+    if not setting['binance']:
+        return
+    user_price_interval = await long_interval_user_binance(setting['interval_pump'], symbol)
+    user_price_interval_short = await long_interval_user_binance(setting['intarval_short'], symbol)
+    for i in user_price_interval:
+        a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+        if a >= setting['quantity_pump']:
+            if await quantity(idt, symbol, setting['interval_pump'], 'binance', 1):
+                q = await clear_quantity_signal(idt, symbol, 'binance', 1)
+                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                await message_long_binance(idt, a, symbol, setting['interval_pump'], q,
+                                           qi_text[setting['interval_signal_pd']])
+                await asyncio.sleep(1)
+    for i in user_price_interval_short:
+        b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+        if b <= setting['quantity_short']:
+            if await quantity(idt, symbol, setting['intarval_short'], 'binance', 0):
+                q = await clear_quantity_signal(idt, symbol, 'binance', 0)
+                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                await message_short_binance(idt, b, symbol, setting['intarval_short'], q,
+                                            qi_text[setting['interval_signal_pd']])
+                await asyncio.sleep(1)
