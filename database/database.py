@@ -34,15 +34,6 @@ async def db_start():
             )
             ''') as cursor: pass
 
-        async with db.execute('''
-            CREATE TABLE IF NOT EXISTS quantity_user_signal_mini (
-            tg_id INTEGER,
-            symbol TEXT,
-            date_signal TEXT,
-            market TEXT
-            )
-            ''') as cursor: pass
-
 
 config: Config = load_config('.env')
 user = config.database.user
@@ -106,6 +97,18 @@ async def db_interval_long(tg_id, interval_long):
         connect_db.commit()
 
 
+async def db_changes_long_min(tg_id, changes_long_min):
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET quatity_pump_min=%s WHERE tg_id=%s''', (changes_long_min, tg_id))
+        connect_db.commit()
+
+
+async def db_interval_long_min(tg_id, interval_long_min):
+    with connect_db.cursor() as db:
+        db.execute('''UPDATE users_settings SET intarval_pump_min=%s WHERE tg_id=%s''', (interval_long_min, tg_id))
+        connect_db.commit()
+
+
 async def db_quantity_setting(tg_id, quantity_setting):
     with connect_db.cursor() as db:
         db.execute('''UPDATE users_settings SET quatity_signal_pd=%s WHERE tg_id=%s''', (quantity_setting, tg_id))
@@ -161,7 +164,7 @@ async def long_interval_user_binance(interval_long, symbol):
     async with aiosqlite.connect('database/database.db') as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
         result = await db.execute('''SELECT last_prise FROM 
-        binance WHERE date_create>? and symbol=?ORDER BY date_create''', (added_date, symbol))
+        binance WHERE date_create>? and symbol=? ORDER BY date_create''', (added_date, symbol))
         result = await result.fetchall()
         return result
 
@@ -272,7 +275,6 @@ async def clear_premium():
                 connect_db.commit()
                 db.execute('''DELETE FROM setting_oi WHERE tg_id=%s''', (i,))
                 connect_db.commit()
-
 
 
 async def premium_setting(tg_id, days):

@@ -1,13 +1,13 @@
 import asyncio
 import logging
-from datetime import datetime
+
 
 from pybit.unified_trading import HTTP
 from binance.client import Client
 from config_data.config import Config, load_config
 from database.database import (user_id, long_interval_user, quantity, clear_quantity_signal, premium_user, long_interval_user_binance, db_setting_selection, state_signal, db_bybit, db_binance, list_premium)
 
-from handlers.user import message_long, message_short, message_short_binance, message_long_binance
+from handlers.user import message_long, message_short, message_short_binance, message_long_binance, message_long_mini_bybit, message_long_binance_min
 
 
 logger2 = logging.getLogger(__name__)
@@ -58,6 +58,9 @@ async def signal_bybit(idt, bybit_data):
 
 
 async def user_signal_bybit(idt, data_symbol):
+    quintity_long = 0
+    quintity_short = 0
+    quintity_long_mini = 0
     setting = await db_setting_selection(idt)
     signal_state = await state_signal(idt)
     if not signal_state[0]:
@@ -68,6 +71,7 @@ async def user_signal_bybit(idt, data_symbol):
     last_price = data_symbol[1]
     user_price_interval = await long_interval_user(setting['interval_pump'], symbol)
     user_price_interval_short = await long_interval_user(setting['intarval_short'], symbol)
+    user_price_interval_mini = await long_interval_user(setting['intarval_pump_min'], symbol)
     for i in user_price_interval:
         a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
         if a >= setting['quantity_pump']:
@@ -76,35 +80,57 @@ async def user_signal_bybit(idt, data_symbol):
                 qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                 await message_long(idt, a, symbol, setting['interval_pump'], q,
                                    qi_text[setting['interval_signal_pd']])
+                quintity_long += 1
                 await asyncio.sleep(1)
+                if quintity_long > 5:
+                    return
+
     for i in user_price_interval_short:
         b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
         if b <= setting['quantity_short']:
             if await quantity(idt, symbol, setting['intarval_short'], 'bybit', 0):
                 q = await clear_quantity_signal(idt, symbol, 'bybit', 0)
-                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                qi_text = {3: 'За 24 часа', 30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                 await message_short(idt, b, symbol, setting['intarval_short'], q,
                                     qi_text[setting['interval_signal_pd']])
+                quintity_short += 1
                 await asyncio.sleep(1)
+                if quintity_short > 5:
+                    return
+
+    for i in user_price_interval_mini:
+        c = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+        if c >= setting['quatity_pump_min']:
+            if await quantity(idt, symbol, setting['intarval_pump_min'], 'bybit', 3):
+                q = await clear_quantity_signal(idt, symbol, 'bybit', 3)
+                qi_text = {3: 'За 24 часа', 30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                await message_long_mini_bybit(idt, c, symbol, setting['intarval_pump_min'], q,
+                                   qi_text[setting['intarval_signal_pm']])
+                quintity_long_mini += 1
+                await asyncio.sleep(1)
+                if quintity_long_mini > 5:
+                    return
 
 
 async def symbol_binance():
     try:
         client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
-        data_binance = client.futures_symbol_ticker()
+        data_binance_no_sorted = client.futures_symbol_ticker()
         binance_data = []
+        data_binance = sorted(data_binance_no_sorted, key=lambda k: k['symbol'])
         for symbol in data_binance:
             if 'USDT' in symbol['symbol']:
                 binance_data.append((symbol['symbol'], symbol['price']))
         await db_binance(binance_data)
-        user = await user_id()
-        user_iter = [i[0] for i in user if await premium_user(i[0])]
+        user = await list_premium()
+        user_iter = [i[0] for i in user]
         while user_iter:
             tg_id_user = [signal_binance(user, binance_data) for user in user_iter[:5]]
             await asyncio.gather(*tg_id_user)
             user_iter = user_iter[5:]
     except Exception as e:
         logger2.error(e)
+        print('error')
         await asyncio.sleep(4)
 
 
@@ -116,6 +142,9 @@ async def signal_binance(idt, binance_data):
 
 
 async def user_binance_signal(idt, data_b):
+    quintity_long = 0
+    quintity_short = 0
+    quintity_long_mini = 0
     setting = await db_setting_selection(idt)
     signal_state = await state_signal(idt)
     symbol = data_b[0]
@@ -126,21 +155,46 @@ async def user_binance_signal(idt, data_b):
         return
     user_price_interval = await long_interval_user_binance(setting['interval_pump'], symbol)
     user_price_interval_short = await long_interval_user_binance(setting['intarval_short'], symbol)
+    user_price_interval_mini = await long_interval_user_binance(setting['intarval_pump_min'], symbol)
+
     for i in user_price_interval:
         a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
         if a >= setting['quantity_pump']:
-            if await quantity(idt, symbol, setting['interval_pump'], 'binance', 1):
+            x = await quantity(idt, symbol, setting['interval_pump'], 'binance', 1)
+            if x:
                 q = await clear_quantity_signal(idt, symbol, 'binance', 1)
-                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                qi_text = {3: 'За 24 часа', 30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                 await message_long_binance(idt, a, symbol, setting['interval_pump'], q,
                                            qi_text[setting['interval_signal_pd']])
+                quintity_long += 1
                 await asyncio.sleep(1)
+                if quintity_long > 5:
+                    return
+
     for i in user_price_interval_short:
         b = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
         if b <= setting['quantity_short']:
-            if await quantity(idt, symbol, setting['intarval_short'], 'binance', 0):
+            x = await quantity(idt, symbol, setting['intarval_short'], 'binance', 0)
+            if x:
                 q = await clear_quantity_signal(idt, symbol, 'binance', 0)
-                qi_text = {30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                qi_text = {3: 'За 24 часа', 30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
                 await message_short_binance(idt, b, symbol, setting['intarval_short'], q,
                                             qi_text[setting['interval_signal_pd']])
+                quintity_short += 1
                 await asyncio.sleep(1)
+                if quintity_short > 5:
+                    return
+
+    for i in user_price_interval_mini:
+        c = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
+        if c >= setting['quatity_pump_min']:
+            x = await quantity(idt, symbol, setting['intarval_pump_min'], 'binance', 3)
+            if x:
+                q = await clear_quantity_signal(idt, symbol, 'binance', 3)
+                qi_text = {3: 'За 24 часа', 30: 'За 24 часа', 360: 'За 6 часов', 720: 'За 12 часов', 1440: 'За 24 часа'}
+                await message_long_binance_min(idt, c, symbol, setting['intarval_pump_min'], q,
+                                   qi_text[setting['intarval_signal_pm']])
+                quintity_long_mini += 1
+                await asyncio.sleep(1)
+                if quintity_long_mini > 5:
+                    return
