@@ -8,18 +8,31 @@ import asyncio
 async def db_start():
     async with aiosqlite.connect('database/database.db') as db:
         async with db.execute('''
-            CREATE TABLE IF NOT EXISTS binance (
+            CREATE TABLE IF NOT EXISTS bybit (
             symbol TEXT,
             last_prise TEXT,
+            oi TEXT,
             date_create TEXT
             )
             ''') as cursor: pass
 
         async with db.execute('''
-            CREATE TABLE IF NOT EXISTS bybit (
+            CREATE TABLE IF NOT EXISTS quantity_user_signal (
+            tg_id INTEGER,
+            symbol TEXT,
+            date_signal TEXT,
+            market TEXT,
+            short INTEGER
+            )
+            ''') as cursor: pass
+
+
+async def db_start_binance():
+    async with aiosqlite.connect('database/database_binance.db') as db:
+        async with db.execute('''
+            CREATE TABLE IF NOT EXISTS binance (
             symbol TEXT,
             last_prise TEXT,
-            oi TEXT,
             date_create TEXT
             )
             ''') as cursor: pass
@@ -61,7 +74,7 @@ async def db_bybit(symbol):
 
 
 async def db_binance(symbol):
-    async with aiosqlite.connect('database/database.db') as db:
+    async with aiosqlite.connect('database/database_binance.db') as db:
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=240)
         await db.execute('''DELETE FROM binance WHERE date_create<?''', (dt,))
         await db.commit()
@@ -161,7 +174,7 @@ async def long_interval_user(interval_long, symbol):
 
 
 async def long_interval_user_binance(interval_long, symbol):
-    async with aiosqlite.connect('database/database.db') as db:
+    async with aiosqlite.connect('database/database_binance.db') as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
         result = await db.execute('''SELECT last_prise FROM 
         binance WHERE date_create>? and symbol=? ORDER BY date_create''', (added_date, symbol))
@@ -225,6 +238,52 @@ async def clear_quantity_signal(tg_id, symbol, market, short):
         return quantity_count[0]
 
 
+async def quantity_binance(tg_id, symbol, interval_user, market, short):
+    async with aiosqlite.connect('database/database_binance.db') as db:
+        symbol_signal = await db.execute('''SELECT 1 FROM quantity_user_signal WHERE
+        tg_id=? and symbol=? and short=?''', (tg_id, symbol, short))
+        symbol_signal = await symbol_signal.fetchone()
+        setting = await db_setting_selection(tg_id)
+        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=setting['interval_signal_pd'])
+        dt_base = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_user + 1)
+        quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE
+        (tg_id=? and symbol=? and date_signal>? and short=?) ORDER BY date_signal''',
+                                          (tg_id, symbol, dt, short))
+        quantity_count = await quantity_count.fetchone()
+        quantity_count_base = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE
+                (tg_id=? and symbol=? and date_signal>? and short=?) ORDER BY date_signal''',
+                                               (tg_id, symbol, dt_base, short))
+        quantity_count_base = await quantity_count_base.fetchone()
+        dt = datetime.datetime.now(datetime.timezone.utc)
+        if symbol_signal is None:
+            await db.execute('''INSERT INTO quantity_user_signal (tg_id, symbol, date_signal, market, short) VALUES (
+            ?, ?, ?, ?, ?)''', (tg_id, symbol, dt, short))
+            await db.commit()
+            return True
+        elif quantity_count[0] < setting['quatity_signal_pd']:
+            if quantity_count_base[0] < 1:
+                await db.execute('''INSERT INTO quantity_user_signal (tg_id, symbol, date_signal, market, short)
+                VALUES (?, ?, ?, ?, ?)''', (tg_id, symbol, dt, short))
+                await db.commit()
+                return True
+        else:
+            return False
+
+
+async def clear_quantity_signal_binance(tg_id, symbol, market, short):
+    async with aiosqlite.connect('database/database_binance.db') as db:
+        dt_cl = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1440)
+        quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE
+                (tg_id=? and symbol=? and date_signal>? and short=?) ORDER BY date_signal''',
+                                          (tg_id, symbol, dt_cl, short))
+        quantity_count = await quantity_count.fetchone()
+        await db.execute('''DELETE FROM quantity_user_signal WHERE (
+        tg_id=? and symbol=? and date_signal<? and short=?)''',
+                         (tg_id, symbol, dt_cl, short))
+        await db.commit()
+        return quantity_count[0]
+
+
 async def premium_user(tg_id):  #функция проверяет на подписку
     with connect_db.cursor() as db:
         connect_db.commit()
@@ -267,7 +326,7 @@ async def clear_premium():
         db.execute('''SELECT tg_id FROM users_prem WHERE (data_prem<%s)''',
                                    (today, ))
         premium = db.fetchall()
-        if premium:
+        if not premium:
             for i in premium:
                 db.execute('''DELETE FROM users_prem WHERE tg_id=%s''', (i,))
                 connect_db.commit()

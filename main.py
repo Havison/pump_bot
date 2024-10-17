@@ -10,21 +10,21 @@ from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
 from services.signal_message import symbol_bybit, symbol_binance
 from cloud_pay.paymant import list_order
-from database.database import db_start
+from database.database import db_start, db_start_binance
 
-# import sentry_sdk
-#
-#
-# sentry_sdk.init(
-#     dsn="https://833576debd9b254b6af3a73fda18b5cf@o4507817931571200.ingest.de.sentry.io/4507817934848080",
-#     # Set traces_sample_rate to 1.0 to capture 100%
-#     # of transactions for tracing.
-#     traces_sample_rate=1.0,
-#     # Set profiles_sample_rate to 1.0 to profile 100%
-#     # of sampled transactions.
-#     # We recommend adjusting this value in production.
-#     profiles_sample_rate=1.0,
-# )
+import sentry_sdk
+
+
+sentry_sdk.init(
+    dsn="https://833576debd9b254b6af3a73fda18b5cf@o4507817931571200.ingest.de.sentry.io/4507817934848080",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -77,6 +77,7 @@ async def main():
 
     await set_main_menu(bot)
     await db_start()
+    await db_start_binance()
 
 
     dp.include_router(user.router)
