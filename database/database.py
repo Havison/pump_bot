@@ -256,14 +256,14 @@ async def quantity_binance(tg_id, symbol, interval_user, market, short):
         quantity_count_base = await quantity_count_base.fetchone()
         dt = datetime.datetime.now(datetime.timezone.utc)
         if symbol_signal is None:
-            await db.execute('''INSERT INTO quantity_user_signal (tg_id, symbol, date_signal, market, short) VALUES (
-            ?, ?, ?, ?, ?)''', (tg_id, symbol, dt, short))
+            await db.execute('''INSERT INTO quantity_user_signal (tg_id, symbol, date_signal, short) VALUES (
+            ?, ?, ?, ?)''', (tg_id, symbol, dt, short))
             await db.commit()
             return True
         elif quantity_count[0] < setting['quatity_signal_pd']:
             if quantity_count_base[0] < 1:
-                await db.execute('''INSERT INTO quantity_user_signal (tg_id, symbol, date_signal, market, short)
-                VALUES (?, ?, ?, ?, ?)''', (tg_id, symbol, dt, short))
+                await db.execute('''INSERT INTO quantity_user_signal (tg_id, symbol, date_signal, short)
+                VALUES (?, ?, ?, ?)''', (tg_id, symbol, dt, short))
                 await db.commit()
                 return True
         else:
