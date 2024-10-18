@@ -42,9 +42,9 @@ async def symbol_bybit():
         user = await list_premium()
         user_iter = [i[0] for i in user]
         while user_iter:
-            tg_id_user = [signal_bybit(user, bybit_data) for user in user_iter[:5]]
+            tg_id_user = [signal_bybit(user, bybit_data) for user in user_iter[:10]]
             await asyncio.gather(*tg_id_user)
-            user_iter = user_iter[5:]
+            user_iter = user_iter[10:]
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
@@ -125,9 +125,9 @@ async def symbol_binance():
         user = await list_premium()
         user_iter = [i[0] for i in user]
         while user_iter:
-            tg_id_user = [signal_binance(user, binance_data) for user in user_iter[:5]]
+            tg_id_user = [signal_binance(user, binance_data) for user in user_iter[:10]]
             await asyncio.gather(*tg_id_user)
-            user_iter = user_iter[5:]
+            user_iter = user_iter[10:]
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
