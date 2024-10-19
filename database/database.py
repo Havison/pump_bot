@@ -98,11 +98,10 @@ async def quantity(symbol, interval, short):
 
 async def clear_quantity_signal(symbol, interval, short):
     async with aiosqlite.connect('database/database.db') as db:
-        dt_cl = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval)
-        dt_delete = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=30)
+        dt_delete = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1441)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE
                 (symbol=? and date_signal>? and short=?) ORDER BY date_signal''',
-                                          (symbol, dt_cl, short))
+                                          (symbol, dt_delete, short))
         quantity_count = await quantity_count.fetchone()
         await db.execute('''DELETE FROM quantity_user_signal WHERE (symbol=? and date_signal<? and short=?)''',
                          (symbol, dt_delete, short))
@@ -128,11 +127,10 @@ async def quantity_binance(symbol, interval, short):
 
 async def clear_quantity_signal_binance(symbol, interval, short):
     async with aiosqlite.connect('database/database_binance.db') as db:
-        dt_cl = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval)
-        dt_delete = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=30)
+        dt_delete = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1441)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE
                 (symbol=? and date_signal>? and short=?) ORDER BY date_signal''',
-                                          (symbol, dt_cl, short))
+                                          (symbol, dt_delete, short))
         quantity_count = await quantity_count.fetchone()
         await db.execute('''DELETE FROM quantity_user_signal WHERE (symbol=? and date_signal<? and short=?)''',
                          (symbol, dt_delete, short))
