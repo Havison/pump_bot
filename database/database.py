@@ -43,7 +43,7 @@ async def db_start_binance():
 
 async def db_bybit(symbol):
     async with aiosqlite.connect('database/database.db') as db:
-        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=240)
+        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=35)
         await db.execute('''DELETE FROM bybit WHERE date_create<?''', (dt,))
         await db.commit()
         await db.executemany('''INSERT INTO bybit(
@@ -54,7 +54,7 @@ async def db_bybit(symbol):
 
 async def db_binance(symbol):
     async with aiosqlite.connect('database/database_binance.db') as db:
-        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=240)
+        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=35)
         await db.execute('''DELETE FROM binance WHERE date_create<?''', (dt,))
         await db.commit()
         await db.executemany('''INSERT INTO binance(
