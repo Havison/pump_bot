@@ -9,7 +9,6 @@ from handlers import user
 from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
 from services.signal_message import symbol_bybit, symbol_binance
-from cloud_pay.paymant import list_order
 from database.database import db_start, db_start_binance
 
 import sentry_sdk
@@ -42,12 +41,6 @@ async def countinues_taks_binance():
         await symbol_binance()
 
 
-async def countinues_taks_pay():
-    while True:
-        await list_order()
-
-
-
 async def main():
     # Конфигурируем логирование
     logging.basicConfig(
@@ -63,7 +56,6 @@ async def main():
 
     task_bybit = asyncio.create_task(countinues_taks_bybit())
     task_binance = asyncio.create_task(countinues_taks_binance())
-    task_paymant = asyncio.create_task(countinues_taks_pay())
 
     # Инициализируем объект хранилища
     #storage = ...
