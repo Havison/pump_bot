@@ -104,5 +104,42 @@ async def message_short_binance(tg_id, lp, symbol, q):
                            parse_mode='HTML', disable_web_page_preview=True)
 
 
+async def message_long_bb(tg_id, a, symbol, q):
+    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
+    await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>⚫ByBit and 🌕Binance</b>\n'
+                                               f'<b>Изменения за 30 минут</b>\n'
+                                               f'&#128181;Цена изменилась на: <b>{round(a, 2)}%</b>\n'
+                                               f'&#129535;Кол-во сигналов за 24 часа: <b>{q}</b>\n'
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{binance}\">Binance</a>',
+                           parse_mode='HTML', disable_web_page_preview=True)
+
+
+async def message_long_mini_bb(tg_id, lp, symbol, q):
+    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
+    await bot.send_message(chat_id=tg_id, text=f'💹<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>⚫ByBit and 🌕Binance</b>\n'
+                                               f'<b>Изменения за 3 минуты</b>\n'
+                                               f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
+                                               f'&#129535;Кол-во сигналов за 24 часа: <b>{q}</b>\n'
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{binance}\">Binance</a>',
+                           parse_mode='HTML', disable_web_page_preview=True)
+
+
+async def message_short_bb(tg_id, lp, symbol, q):
+    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
+    binance = f'https://www.binance.com/ru/futures/{symbol}'
+    await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]}</b>\n'
+                                               f'<b>⚫ByBit and 🌕Binance</b>\n'
+                                               f'Изменения за 30 минут\n'
+                                               f'&#128181;Цена изменилась на: <b>{round(lp, 2)}%</b>\n'
+                                               f'&#129535;Кол-во сигналов за 24 часа: <b>{q}</b>\n'
+                                               f'<a href=\"{bybit}\">ByBit</a> | <a href=\"{coinglass}\">CoinGlass</a> | <a href=\"{binance}\">Binance</a>',
+                           parse_mode='HTML', disable_web_page_preview=True)
 
 
