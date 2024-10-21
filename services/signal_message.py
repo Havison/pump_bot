@@ -41,6 +41,15 @@ async def binance():
             binance_data.append(i['symbol'])
     return binance_data
 
+async def bybit():
+    symbol = []
+    data = session.get_tickers(category="linear")
+    for dicts in data['result']['list']:
+        if 'USDT' in dicts['symbol']:
+            symbol.append(dicts['symbol'])
+    return symbol
+
+
 
 async def symbol_bybit():
     try:
@@ -74,8 +83,8 @@ async def user_signal_bybit(idt, data_symbol):
             if await quantity(symbol, 30, 1):
                 if symbol in await binance():
                     qp = await clear_quantity_signal(symbol, 30, 1)
-                    await clear_quantity_signal_binance(symbol, 30, 1)
                     await quantity_binance(symbol, 30, 1)
+                    await clear_quantity_signal_binance(symbol, 30, 1)
                     await message_long_bb(idt, a, symbol, qp)
                 else:
                     qp = await clear_quantity_signal(symbol, 30, 1)
@@ -84,8 +93,8 @@ async def user_signal_bybit(idt, data_symbol):
             if await quantity(symbol, 30, 0):
                 if symbol in await binance():
                     qp = await clear_quantity_signal(symbol, 30, 0)
-                    await clear_quantity_signal_binance(symbol, 30, 0)
                     await quantity_binance(symbol, 30, 1)
+                    await clear_quantity_signal_binance(symbol, 30, 0)
                     await message_short_bb(idt, a, symbol, qp)
                 else:
                     qp = await clear_quantity_signal(symbol, 30, 0)
@@ -96,8 +105,8 @@ async def user_signal_bybit(idt, data_symbol):
             if await quantity(symbol, 3, 3):
                 if symbol in await binance():
                     qp = await clear_quantity_signal(symbol, 3, 3)
-                    await clear_quantity_signal_binance(symbol, 3, 3)
                     await quantity_binance(symbol, 3, 3)
+                    await clear_quantity_signal_binance(symbol, 3, 3)
                     await message_long_mini_bb(idt, c, symbol, qp)
                 else:
                     qp = await clear_quantity_signal(symbol, 3, 3)
@@ -114,7 +123,7 @@ async def symbol_binance():
             if 'USDT' in symbol['symbol']:
                 binance_data.append((symbol['symbol'], symbol['price']))
         await db_binance(binance_data)
-        await signal_binance(-1002392376833, binance_data)
+        await signal_binance(-10023923768339, binance_data)
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
@@ -137,17 +146,35 @@ async def user_binance_signal(idt, data_b):
         if a >= 10:
             x = await quantity_binance(symbol, 30, 1)
             if x:
-                q = await clear_quantity_signal_binance(symbol, 30, 1)
-                await message_long_binance(idt, a, symbol, q)
+                if symbol in await bybit():
+                    qp = await clear_quantity_signal_binance(symbol, 30, 1)
+                    await quantity(symbol, 30, 1)
+                    await clear_quantity_signal(symbol, 30, 1)
+                    await message_long_bb(idt, a, symbol, qp)
+                else:
+                    q = await clear_quantity_signal_binance(symbol, 30, 1)
+                    await message_long_binance(idt, a, symbol, q)
         if a <= -10:
             x = await quantity_binance(symbol, 30, 0)
             if x:
-                q = await clear_quantity_signal_binance(symbol, 30, 0)
-                await message_short_binance(idt, a, symbol, q)
+                if symbol in await bybit():
+                    qp = await clear_quantity_signal_binance(symbol, 30, 0)
+                    await quantity(symbol, 30, 1)
+                    await clear_quantity_signal(symbol, 30, 0)
+                    await message_short_bb(idt, a, symbol, qp)
+                else:
+                    q = await clear_quantity_signal_binance(symbol, 30, 0)
+                    await message_short_binance(idt, a, symbol, q)
     for i in user_price_interval_mini:
         c = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
         if c >= 3:
             x = await quantity_binance(symbol, 3, 3)
             if x:
-                q = await clear_quantity_signal_binance(symbol, 3, 3)
-                await message_long_binance_min(idt, c, symbol, q)
+                if symbol in await bybit():
+                    qp = await clear_quantity_signal_binance(symbol, 3, 3)
+                    await quantity(symbol, 3, 3)
+                    await clear_quantity_signal(symbol, 3, 3)
+                    await message_long_mini_bb(idt, c, symbol, qp)
+                else:
+                    q = await clear_quantity_signal_binance(symbol, 3, 3)
+                    await message_long_binance_min(idt, c, symbol, q)
