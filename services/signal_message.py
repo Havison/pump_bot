@@ -123,7 +123,7 @@ async def symbol_binance():
             if 'USDT' in symbol['symbol']:
                 binance_data.append((symbol['symbol'], symbol['price']))
         await db_binance(binance_data)
-        await signal_binance(-10023923768339, binance_data)
+        await signal_binance(-1002392376833, binance_data)
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
