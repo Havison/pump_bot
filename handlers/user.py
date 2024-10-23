@@ -66,7 +66,7 @@ async def message_short(tg_id, lp, symbol, q):
 
 
 async def message_long_binance(tg_id, lp, symbol, q):
-    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    coinglass = f'https://www.coinglass.com/tv/ru/Binance_{symbol}'
     binance = f'https://www.binance.com/ru/futures/{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🟢<b>{symbol[0:-4]}</b>\n'
@@ -79,7 +79,7 @@ async def message_long_binance(tg_id, lp, symbol, q):
 
 
 async def message_long_binance_min(tg_id, lp, symbol, q):
-    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    coinglass = f'https://www.coinglass.com/tv/ru/Binance_{symbol}'
     binance = f'https://www.binance.com/ru/futures/{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'💹<b>{symbol[0:-4]}</b>\n'
@@ -92,7 +92,7 @@ async def message_long_binance_min(tg_id, lp, symbol, q):
 
 
 async def message_short_binance(tg_id, lp, symbol, q):
-    coinglass = f'https://www.coinglass.com/tv/ru/Bybit_{symbol}'
+    coinglass = f'https://www.coinglass.com/tv/ru/Binance_{symbol}'
     binance = f'https://www.binance.com/ru/futures/{symbol}'
     bybit = f'https://www.bybit.com/trade/usdt/{symbol}'
     await bot.send_message(chat_id=tg_id, text=f'🔴<b>{symbol[0:-4]}</b>\n'

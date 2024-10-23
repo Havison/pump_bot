@@ -86,10 +86,11 @@ async def quantity(symbol, interval, short):
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval + 1)
         quantity_count = await db.execute('''SELECT COUNT(*) FROM quantity_user_signal WHERE (symbol=? and date_signal>? and short=?) ORDER BY date_signal''', (symbol, dt, short))
         quantity_count = await quantity_count.fetchone()
-        dt = datetime.datetime.now(datetime.timezone.utc)
+        print(quantity_count, symbol, short)
+        dt_new = datetime.datetime.now(datetime.timezone.utc)
         if quantity_count[0] < 1:
             await db.execute('''INSERT INTO quantity_user_signal (symbol, date_signal, short)
-            VALUES (?, ?, ?)''', (symbol, dt, short))
+            VALUES (?, ?, ?)''', (symbol, dt_new, short))
             await db.commit()
             return True
         else:
