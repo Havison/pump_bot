@@ -244,7 +244,7 @@ async def clear_premium():
         db.execute('''SELECT tg_id FROM users_prem WHERE (data_prem<%s)''',
                                    (today, ))
         premium = db.fetchall()
-        if not premium:
+        if premium:
             for i in premium:
                 db.execute('''DELETE FROM users_prem WHERE tg_id=%s''', (i,))
                 connect_db.commit()

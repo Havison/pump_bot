@@ -4,7 +4,7 @@ import logging
 import requests
 from pybit.unified_trading import HTTP
 from config_data.config import Config, load_config
-from database.database import (long_interval_user, quantity, clear_quantity_signal, db_setting_selection, state_signal, db_bybit, list_premium)
+from database.database import (long_interval_user, quantity, clear_quantity_signal, db_setting_selection, state_signal, db_bybit, list_premium, clear_premium)
 from handlers.user import message_bybit_binance, message_bybit, message_binance
 
 
@@ -59,6 +59,7 @@ async def market_price():
 async def market_add_database():
     data = await market_price()
     await db_bybit(data[0])
+    await clear_premium()
     await asyncio.sleep(7)
 
 
