@@ -233,7 +233,7 @@ async def free_premium_user(tg_id):
         else:
             db.execute('''INSERT INTO free_prem (tg_id) VALUES (%s)''', (tg_id,))
             connect_db.commit()
-            await premium_setting(tg_id, 2)
+            await premium_setting(tg_id, 1)
             return False
 
 
