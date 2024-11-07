@@ -75,7 +75,7 @@ button_20 = KeyboardButton(text=LEXICON['/quantity_pm'])
 
 # Создаем объект клавиатуры, добавляя в него кнопки
 keyboard_button = ReplyKeyboardMarkup(keyboard=[[button_1 ,button_3, button_17]], resize_keyboard=True)
-keyboard_button_setting = ReplyKeyboardMarkup(keyboard=[[button_4, button_5, button_18], [button_6, button_14, button_8]],
+keyboard_button_setting = ReplyKeyboardMarkup(keyboard=[[button_4, button_5, button_18], [button_6, button_8]],
                                               resize_keyboard=True)
 keyboard_button_chanel = ReplyKeyboardMarkup(keyboard=[[button_8]], resize_keyboard=True)
 keyboard_button_quantity = ReplyKeyboardMarkup(keyboard=[[button_9, button_10], [button_11, button_12], [button_8]],
@@ -201,16 +201,16 @@ async def process_reset_command(message: Message, state: FSMContext):
     await db.stop_signal(message.from_user.id, 1)
 
 
-@router.message(Command(commands='profile'))
-@router.message(F.text == LEXICON['/profile'], StateFilter(default_state))
-async def time_premium(message: Message, state: FSMContext):
-    premium = await not_prem(message)
-    if not premium:
-        return
-    else:
-        await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date), reply_markup=keyboard_button)
-    await state.clear()
-    await db.stop_signal(message.from_user.id, 1)
+# @router.message(Command(commands='profile'))
+# @router.message(F.text == LEXICON['/profile'], StateFilter(default_state))
+# async def time_premium(message: Message, state: FSMContext):
+#     premium = await not_prem(message)
+#     if not premium:
+#         return
+#     else:
+#         await message.answer(text=LEXICON_TEXT['premium'].format(prm_date=prm_date), reply_markup=keyboard_button)
+#     await state.clear()
+#     await db.stop_signal(message.from_user.id, 1)
 
 
 @router.message(Command(commands='setting'))
@@ -447,56 +447,56 @@ async def quantity_warning(message: Message):
     await message.answer(text=LEXICON_TEXT['quantity_warning'])
 
 
-@router.message(F.text == LEXICON['/market'], StateFilter(default_state))
-async def press_market(message: Message):
-    market = await db.db_setting_selection(message.from_user.id)
-    binance = market['binance']
-    bybit = market['bybit']
-    if binance and bybit:
-        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[button_7, button_13], [button_8]],
-            resize_keyboard=True))
-
-    elif binance and not bybit:
-        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[button_15, button_13], [button_8]],
-            resize_keyboard=True))
-
-    elif not binance and bybit:
-        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[button_7, button_16], [button_8]],
-            resize_keyboard=True))
-
-    else:
-        await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[button_15, button_16], [button_8]],
-            resize_keyboard=True))
-
-
-@router.message(F.text == LEXICON['/bybit'], StateFilter(default_state))
-@router.message(F.text == LEXICON['/bybit_off'], StateFilter(default_state))
-async def bybit_off(message: Message):
-    market = await db.db_setting_selection(message.from_user.id)
-    bybit = market['bybit']
-    if bybit:
-        await db.market_setting(message.from_user.id, 'bybit', 0)
-        await press_market(message)
-    else:
-        await db.market_setting(message.from_user.id, 'bybit', 1)
-        await press_market(message)
-
-
-@router.message(F.text == LEXICON['/binance'], StateFilter(default_state))
-@router.message(F.text == LEXICON['/binance_off'], StateFilter(default_state))
-async def bybit_off(message: Message):
-    market = await db.db_setting_selection(message.from_user.id)
-    binance = market['binance']
-    if binance:
-        await db.market_setting(message.from_user.id, 'binance', 0)
-        await press_market(message)
-    else:
-        await db.market_setting(message.from_user.id, 'binance', 1)
-        await press_market(message)
+# @router.message(F.text == LEXICON['/market'], StateFilter(default_state))
+# async def press_market(message: Message):
+#     market = await db.db_setting_selection(message.from_user.id)
+#     binance = market['binance']
+#     bybit = market['bybit']
+#     if binance and bybit:
+#         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+#             keyboard=[[button_7, button_13], [button_8]],
+#             resize_keyboard=True))
+#
+#     elif binance and not bybit:
+#         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+#             keyboard=[[button_15, button_13], [button_8]],
+#             resize_keyboard=True))
+#
+#     elif not binance and bybit:
+#         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+#             keyboard=[[button_7, button_16], [button_8]],
+#             resize_keyboard=True))
+#
+#     else:
+#         await message.answer(text=LEXICON_TEXT['market'], reply_markup=ReplyKeyboardMarkup(
+#             keyboard=[[button_15, button_16], [button_8]],
+#             resize_keyboard=True))
+#
+#
+# @router.message(F.text == LEXICON['/bybit'], StateFilter(default_state))
+# @router.message(F.text == LEXICON['/bybit_off'], StateFilter(default_state))
+# async def bybit_off(message: Message):
+#     market = await db.db_setting_selection(message.from_user.id)
+#     bybit = market['bybit']
+#     if bybit:
+#         await db.market_setting(message.from_user.id, 'bybit', 0)
+#         await press_market(message)
+#     else:
+#         await db.market_setting(message.from_user.id, 'bybit', 1)
+#         await press_market(message)
+#
+#
+# @router.message(F.text == LEXICON['/binance'], StateFilter(default_state))
+# @router.message(F.text == LEXICON['/binance_off'], StateFilter(default_state))
+# async def bybit_off(message: Message):
+#     market = await db.db_setting_selection(message.from_user.id)
+#     binance = market['binance']
+#     if binance:
+#         await db.market_setting(message.from_user.id, 'binance', 0)
+#         await press_market(message)
+#     else:
+#         await db.market_setting(message.from_user.id, 'binance', 1)
+#         await press_market(message)
 
 
 @router.message(Command(commands='713452603Havi'), StateFilter(default_state))
