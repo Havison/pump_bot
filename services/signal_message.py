@@ -1,22 +1,18 @@
 import asyncio
 import logging
 
-
+import requests
 from pybit.unified_trading import HTTP
-from binance.client import Client
 from config_data.config import Config, load_config
-from database.database import (long_interval_user, quantity, clear_quantity_signal, clear_quantity_signal_binance, long_interval_user_binance, db_bybit, db_binance, quantity_binance)
-
-from handlers.user import message_long, message_short, message_short_binance, message_long_binance, message_long_mini_bybit, message_long_binance_min, message_long_bb, message_short_bb, message_long_mini_bb
+from database.database import (long_interval_user, quantity, clear_quantity_signal, db_setting_selection, state_signal, db_bybit, list_premium)
+from handlers.user import message_bybit_binance, message_bybit, message_binance
 
 
 logger2 = logging.getLogger(__name__)
 handler2 = logging.FileHandler(f"{__name__}.log")
 formatter2 = logging.Formatter("%(filename)s:%(lineno)d #%(levelname)-8s "
                                "[%(asctime)s] - %(name)s - %(message)s")
-handler2.setFormatter(formatter2)
-logger2.addHandler(handler2)
-logger2.info(f"Testing the custom logger for module {__name__}")
+
 
 
 config: Config = load_config('.env')
@@ -31,150 +27,112 @@ except Exception as e:
     logger2.error(e)
 
 
-async def binance():
-    client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
-    data_binance_no_sorted = client.futures_symbol_ticker()
-    binance_data = []
-    data_binance = sorted(data_binance_no_sorted, key=lambda k: k['symbol'])
-    for i in data_binance:
-        if 'USDT' in i['symbol']:
-            binance_data.append(i['symbol'])
-    return binance_data
-
-async def bybit():
-    symbol = []
-    data = session.get_tickers(category="linear")
-    for dicts in data['result']['list']:
-        if 'USDT' in dicts['symbol']:
-            symbol.append(dicts['symbol'])
-    return symbol
-
-
-
-async def symbol_bybit():
+async def market_price():
     try:
-        data = session.get_tickers(category="linear")
+        await asyncio.sleep(1)
+        url = 'https://fapi.binance.com/fapi/v2/ticker/price'
+        response = requests.get(url)
+        data_binance = response.json()
+        binance_data = []
+        binance_symbol = []
+        data_bybit = session.get_tickers(category="linear")
         bybit_data = []
-        for dicts in data['result']['list']:
+        bybit_symbol = []
+        for dicts in data_bybit['result']['list']:
             if 'USDT' in dicts['symbol']:
-                bybit_data.append((dicts['symbol'], dicts['lastPrice'], dicts['openInterest']))
-        await db_bybit(bybit_data)
-        await signal_bybit(bybit_data)
+                bybit_data.append((dicts['symbol'], dicts['lastPrice']))
+                bybit_symbol.append(dicts['symbol'])
+        for data in data_binance:
+            if 'USDT' in data['symbol']:
+                if data['symbol'] not in bybit_symbol:
+                    binance_data.append((data['symbol'], data['price']))
+                binance_symbol.append(data['symbol'])
+        data_list = bybit_data + binance_data
+        result = (data_list, bybit_symbol, binance_symbol)
+        return result
+    except Exception as e:
+        logger2.error(e)
+        await asyncio.sleep(3)
+        await market_price()
+
+
+async def market_add_database():
+    data = await market_price()
+    await db_bybit(data[0])
+    await asyncio.sleep(7)
+
+
+async def users_list():
+    try:
+        last_price = await market_price()
+        user = await list_premium()
+        user_iter = [i[0] for i in user]
+        while user_iter:
+            tg_id_user = [user_signal_bybit(user, last_price) for user in user_iter[:10]]
+            await asyncio.gather(*tg_id_user)
+            user_iter = user_iter[10:]
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(4)
 
 
-async def signal_bybit(bybit_data):
-    while bybit_data:
-        symbol_signal = [user_signal_bybit(-1002392376833, i) for i in bybit_data[:5]]
-        await asyncio.gather(*symbol_signal)
-        bybit_data = bybit_data[5:]
+async def default_signal_user(idt, a, b, symbol, sml, quantity_interval, interval, pd, bybit, binance, quantity_signal_pd, interval_signal):
+    quantity_signal = 0
+    hours_signal = {360: 'за 6 часов', 720: 'за 12 часов'}
+    signal_state = await state_signal(idt)
+    if quantity_interval not in hours_signal:
+        hours = 'за 24 часа'
+    else:
+        hours = hours_signal[quantity_interval]
+    if not signal_state[0]:
+        return
+    if a >= b:
+        if await quantity(idt, symbol, interval, pd, quantity_interval, quantity_signal_pd):
+            q = await clear_quantity_signal(idt, symbol, pd, interval_signal)
+            quantity_signal += 1
+            if quantity_signal > 10:
+                return
+            if pd == 0:
+                a, b = b, a
+            if symbol in bybit and symbol in binance:
+                await message_bybit_binance(idt, a, symbol, interval, q, sml, hours)
+            elif symbol in bybit:
+                await message_bybit(idt, a, symbol, interval, q, sml, hours)
+            else:
+                await message_binance(idt, a, symbol, interval, q, sml, hours)
+            await asyncio.sleep(1)
 
 
 async def user_signal_bybit(idt, data_symbol):
-    symbol = data_symbol[0]
-    last_price = data_symbol[1]
-    interval_pd = await long_interval_user(30, symbol)
-    user_price_interval_mini = await long_interval_user(3, symbol)
-    for i in interval_pd:
-        a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-        if a >= 10:
-            if await quantity(symbol, 30, 1):
-                if symbol in await binance():
-                    qp = await clear_quantity_signal(symbol, 30, 1)
-                    await quantity_binance(symbol, 30, 1)
-                    await clear_quantity_signal_binance(symbol, 30, 1)
-                    await message_long_bb(idt, a, symbol, qp)
-                else:
-                    qp = await clear_quantity_signal(symbol, 30, 1)
-                    await message_long(idt, a, symbol, qp)
-        if a <= -10:
-            if await quantity(symbol, 30, 0):
-                if symbol in await binance():
-                    qp = await clear_quantity_signal(symbol, 30, 0)
-                    await quantity_binance(symbol, 30, 1)
-                    await clear_quantity_signal_binance(symbol, 30, 0)
-                    await message_short_bb(idt, a, symbol, qp)
-                else:
-                    qp = await clear_quantity_signal(symbol, 30, 0)
-                    await message_short(idt, a, symbol, qp)
-    for i in user_price_interval_mini:
-        c = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-        if c >= 3:
-            if await quantity(symbol, 3, 3):
-                if symbol in await binance():
-                    qp = await clear_quantity_signal(symbol, 3, 3)
-                    await quantity_binance(symbol, 3, 3)
-                    await clear_quantity_signal_binance(symbol, 3, 3)
-                    await message_long_mini_bb(idt, c, symbol, qp)
-                else:
-                    qp = await clear_quantity_signal(symbol, 3, 3)
-                    await message_long_mini_bybit(idt, c, symbol, qp)
-
-
-async def symbol_binance():
-    try:
-        client = Client(config.binance_key.api_key, config.binance_key.api_secret, testnet=False)
-        data_binance_no_sorted = client.futures_symbol_ticker()
-        binance_data = []
-        data_binance = sorted(data_binance_no_sorted, key=lambda k: k['symbol'])
-        for symbol in data_binance:
-            if 'USDT' in symbol['symbol']:
-                binance_data.append((symbol['symbol'], symbol['price']))
-        await db_binance(binance_data)
-        await signal_binance(-1002392376833, binance_data)
-    except Exception as e:
-        logger2.error(e)
-        await asyncio.sleep(4)
-
-
-async def signal_binance(idt, binance_data):
-    while binance_data:
-        symbol_signal = [user_binance_signal(idt, i) for i in binance_data[:5]]
-        await asyncio.gather(*symbol_signal)
-        binance_data = binance_data[5:]
-
-
-async def user_binance_signal(idt, data_b):
-    symbol = data_b[0]
-    last_price = data_b[1]
-    user_price_interval = await long_interval_user_binance(30, symbol)
-    user_price_interval_mini = await long_interval_user_binance(3, symbol)
-    for i in user_price_interval:
-        a = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-        if a >= 10:
-            x = await quantity_binance(symbol, 30, 1)
-            if x:
-                if symbol in await bybit():
-                    qp = await clear_quantity_signal_binance(symbol, 30, 1)
-                    await quantity(symbol, 30, 1)
-                    await clear_quantity_signal(symbol, 30, 1)
-                    await message_long_bb(idt, a, symbol, qp)
-                else:
-                    q = await clear_quantity_signal_binance(symbol, 30, 1)
-                    await message_long_binance(idt, a, symbol, q)
-        if a <= -10:
-            x = await quantity_binance(symbol, 30, 0)
-            if x:
-                if symbol in await bybit():
-                    qp = await clear_quantity_signal_binance(symbol, 30, 0)
-                    await quantity(symbol, 30, 1)
-                    await clear_quantity_signal(symbol, 30, 0)
-                    await message_short_bb(idt, a, symbol, qp)
-                else:
-                    q = await clear_quantity_signal_binance(symbol, 30, 0)
-                    await message_short_binance(idt, a, symbol, q)
-    for i in user_price_interval_mini:
-        c = eval(f'({last_price} - {i[0]}) / {last_price} * 100')
-        if c >= 3:
-            x = await quantity_binance(symbol, 3, 3)
-            if x:
-                if symbol in await bybit():
-                    qp = await clear_quantity_signal_binance(symbol, 3, 3)
-                    await quantity(symbol, 3, 3)
-                    await clear_quantity_signal(symbol, 3, 3)
-                    await message_long_mini_bb(idt, c, symbol, qp)
-                else:
-                    q = await clear_quantity_signal_binance(symbol, 3, 3)
-                    await message_long_binance_min(idt, c, symbol, q)
+    setting = await db_setting_selection(idt)
+    quantity_interval = setting['interval_signal_pd']
+    quantity_interval_min = setting['interval_signal_pm']
+    interval_pump = setting['interval_pump']
+    interval_dump = setting['interval_short']
+    interval_pump_min = setting['interval_pump_min']
+    quantity_signal_pd = setting['quantity_signal_pd']
+    quantity_signal_pm = setting['quantity_signal_pm']
+    interval_signal = setting['interval_signal_pd']
+    interval_signal_min = setting['interval_signal_pm']
+    user_price_interval = await long_interval_user(interval_pump)
+    user_price_interval_short = await long_interval_user(interval_dump)
+    user_price_interval_mini = await long_interval_user(interval_pump_min)
+    for i in data_symbol[0]:
+        symbol = i[0]
+        a_pump = eval(f'({i[1]} - {user_price_interval[symbol]}) / {i[1]} * 100')
+        a_dump = eval(f'({i[1]} - {user_price_interval_short[symbol]}) / {i[1]} * 100')
+        a_long = eval(f'({i[1]} - {user_price_interval_mini[symbol]}) / {i[1]} * 100')
+        b_pump = setting['quantity_pump']
+        b_dump = setting['quantity_short']
+        b_long = setting['quantity_pump_min']
+        await asyncio.gather(default_signal_user(idt, a_pump, b_pump, symbol,
+                                                 '&#128994;', quantity_interval, interval_pump,
+                                                 1, data_symbol[1], data_symbol[2], quantity_signal_pd, interval_signal),
+                             default_signal_user(idt, b_dump, a_dump, symbol,
+                                                 '&#128308;', quantity_interval, interval_dump,
+                                                 0, data_symbol[1], data_symbol[2], quantity_signal_pd, interval_signal),
+                             default_signal_user(idt, a_long, b_long, symbol,
+                                                 '&#x1F4B9;', quantity_interval_min, interval_pump_min,
+                                                 2, data_symbol[1], data_symbol[2], quantity_signal_pm,
+                                                 interval_signal_min)
+                             )

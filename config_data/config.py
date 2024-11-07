@@ -25,6 +25,8 @@ class Database:
     user: str
     password: str
     database_type: str
+    db_url: str
+    db: str
 
 
 @dataclass
@@ -64,7 +66,9 @@ def load_config(path: str | None = None) -> Config:
         database=Database(host=env('DATABASE_HOST'),
                           user=env('DATABASE_USER'),
                           password=env('DATABASE_PASSWORD'),
-                          database_type=env('DATABASE_TYPE')
+                          database_type=env('DATABASE_TYPE'),
+                          db_url=env('DB_URL'),
+                          db=env('DB_MARKET')
                           )
     )
 

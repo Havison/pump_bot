@@ -8,8 +8,9 @@ from aiogram.enums import ParseMode
 from handlers import user
 from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
-from services.signal_message import symbol_bybit, symbol_binance
-from database.database import db_start, db_start_binance
+from services.signal_message import market_add_database, users_list
+from cloud_pay.paymant import list_order
+from database.database import db_start
 
 import sentry_sdk
 
@@ -33,12 +34,17 @@ tracemalloc.start()
 
 async def countinues_taks_bybit():
     while True:
-        await symbol_bybit()
+        await market_add_database()
 
 
-async def countinues_taks_binance():
+async def countinues_taks_pay():
     while True:
-        await symbol_binance()
+        await list_order()
+
+
+async def countinues_task_user():
+    while True:
+        await users_list()
 
 
 async def main():
@@ -55,7 +61,8 @@ async def main():
     config: Config = load_config('.env')
 
     task_bybit = asyncio.create_task(countinues_taks_bybit())
-    task_binance = asyncio.create_task(countinues_taks_binance())
+    task_paymant = asyncio.create_task(countinues_taks_pay())
+    task_users = asyncio.create_task(countinues_task_user())
 
     # Инициализируем объект хранилища
     #storage = ...
@@ -69,7 +76,6 @@ async def main():
 
     await set_main_menu(bot)
     await db_start()
-    await db_start_binance()
 
 
     dp.include_router(user.router)
