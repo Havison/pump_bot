@@ -310,7 +310,7 @@ async def short_setting_changes(message: Message, state: FSMContext):
 
 
 @router.message(StateFilter(FSMLongSort.interval_short),
-                lambda x: x.text.isdigit() and 1 <= int(x.text) <= 240)
+                lambda x: x.text.isdigit() and 1 <= int(x.text) <= 120)
 async def long_setting_interval(message: Message, state: FSMContext):
     data = await state.get_data()
     changes_short = data['changes_short']
@@ -329,6 +329,7 @@ async def warning_long_changes(message: Message):
 
 @router.message(StateFilter(FSMLongSort.interval_long))
 @router.message(StateFilter(FSMLongSort.interval_short))
+@router.message(StateFilter(FSMLongSort.interval_long_min))
 async def warning_interval(message: Message):
     await message.answer(text=LEXICON_TEXT['warning_interval'], reply_markup=keyboard_button_chanel)
 

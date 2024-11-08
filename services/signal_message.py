@@ -77,7 +77,7 @@ async def users_list():
         await asyncio.sleep(4)
 
 
-async def default_signal_user(idt, a, b, symbol, sml, quantity_interval, interval, pd, bybit, binance, quantity_signal_pd, interval_signal):
+async def default_signal_user(idt, a, b, symbol, sml, quantity_interval, interval, pd, bybit, binance, quantity_signal_pd):
     quantity_signal = 0
     hours_signal = {360: 'за 6 часов', 720: 'за 12 часов'}
     signal_state = await state_signal(idt)
@@ -89,7 +89,7 @@ async def default_signal_user(idt, a, b, symbol, sml, quantity_interval, interva
         return
     if a >= b:
         if await quantity(idt, symbol, interval, pd, quantity_interval, quantity_signal_pd):
-            q = await clear_quantity_signal(idt, symbol, pd, interval_signal)
+            q = await clear_quantity_signal(idt, symbol, pd, quantity_interval)
             quantity_signal += 1
             if quantity_signal > 10:
                 return
@@ -113,8 +113,6 @@ async def user_signal_bybit(idt, data_symbol):
     interval_pump_min = setting['interval_pump_min']
     quantity_signal_pd = setting['quantity_signal_pd']
     quantity_signal_pm = setting['quantity_signal_pm']
-    interval_signal = setting['interval_signal_pd']
-    interval_signal_min = setting['interval_signal_pm']
     user_price_interval = await long_interval_user(interval_pump)
     user_price_interval_short = await long_interval_user(interval_dump)
     user_price_interval_mini = await long_interval_user(interval_pump_min)
@@ -128,12 +126,11 @@ async def user_signal_bybit(idt, data_symbol):
         b_long = setting['quantity_pump_min']
         await asyncio.gather(default_signal_user(idt, a_pump, b_pump, symbol,
                                                  '&#128994;', quantity_interval, interval_pump,
-                                                 1, data_symbol[1], data_symbol[2], quantity_signal_pd, interval_signal),
+                                                 1, data_symbol[1], data_symbol[2], quantity_signal_pd),
                              default_signal_user(idt, b_dump, a_dump, symbol,
                                                  '&#128308;', quantity_interval, interval_dump,
-                                                 0, data_symbol[1], data_symbol[2], quantity_signal_pd, interval_signal),
+                                                 0, data_symbol[1], data_symbol[2], quantity_signal_pd),
                              default_signal_user(idt, a_long, b_long, symbol,
                                                  '&#x1F4B9;', quantity_interval_min, interval_pump_min,
-                                                 2, data_symbol[1], data_symbol[2], quantity_signal_pm,
-                                                 interval_signal_min)
+                                                 2, data_symbol[1], data_symbol[2], quantity_signal_pm)
                              )
