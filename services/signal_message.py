@@ -52,7 +52,7 @@ async def market_price():
         return result
     except Exception as e:
         logger2.error(e)
-        await asyncio.sleep(3)
+        await asyncio.sleep(1)
         await market_price()
 
 
@@ -60,7 +60,7 @@ async def market_add_database():
     data = await market_price()
     await db_bybit(data[0])
     await clear_premium()
-    await asyncio.sleep(7)
+    await asyncio.sleep(3)
 
 
 async def users_list():
