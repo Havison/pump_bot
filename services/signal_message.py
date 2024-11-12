@@ -51,7 +51,8 @@ async def market_price():
         return result
     except Exception as e:
         logger2.error(e)
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
+        await market_price()
 
 
 async def market_add_database():
@@ -118,11 +119,11 @@ async def user_signal_bybit(idt, bybit, binance):
     market_symbol = bybit + binance
     for symbol in market_symbol:
         try:
-            max_price_pump = max(list(map(eval, user_price_interval[symbol])))
+            max_price_pump = eval(user_price_interval[symbol][-1])
             min_price_pump = min(list(map(eval, user_price_interval[symbol])))
+            min_price_dump = eval(user_price_interval_short[symbol][-1])
             max_price_dump = max(list(map(eval, user_price_interval_short[symbol])))
-            min_price_dump = min(list(map(eval, user_price_interval_short[symbol])))
-            max_price_pump_min = max(list(map(eval, user_price_interval_mini[symbol])))
+            max_price_pump_min = eval(user_price_interval_mini[symbol][-1])
             min_price_pump_min = min(list(map(eval, user_price_interval_mini[symbol])))
             a_pump = (max_price_pump - min_price_pump) / max_price_pump * 100
             a_dump = (min_price_dump - max_price_dump) / min_price_dump * 100
