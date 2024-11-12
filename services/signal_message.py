@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 
 import requests
 from pybit.unified_trading import HTTP
@@ -71,6 +72,7 @@ async def users_list():
             tg_id_user = [user_signal_bybit(user, bybit, binance) for user in user_iter[:10]]
             await asyncio.gather(*tg_id_user)
             user_iter = user_iter[10:]
+        print(datetime.now())
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(2)
