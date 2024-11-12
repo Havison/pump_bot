@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from pybit.unified_trading import HTTP
@@ -40,12 +40,12 @@ async def market_price():
         bybit_symbol = []
         for dicts in data_bybit['result']['list']:
             if 'USDT' in dicts['symbol']:
-                bybit_data.append((dicts['symbol'], dicts['lastPrice']))
+                bybit_data.append((dicts['symbol'], dicts['lastPrice'], datetime.now(timezone.utc)))
                 bybit_symbol.append((dicts['symbol'], 1))
         for data in data_binance:
             if 'USDT' in data['symbol']:
                 if data['symbol'] not in bybit_symbol:
-                    binance_data.append((data['symbol'], data['price']))
+                    binance_data.append((data['symbol'], data['price'], datetime.now(timezone.utc)))
                 binance_symbol.append((data['symbol'], 0))
         data_list = bybit_data + binance_data
         result = (data_list, bybit_symbol, binance_symbol)
@@ -117,8 +117,7 @@ async def user_signal_bybit(idt, bybit, binance):
     user_price_interval_short = await long_interval_user(interval_dump)
     user_price_interval_mini = await long_interval_user(interval_pump_min)
     market_symbol = bybit + binance
-    print(datetime.now())
-    for symbol in market_symbol:
+    for symbol in set(market_symbol):
         try:
             max_price_pump = eval(user_price_interval[symbol][-1])
             min_price_pump = min(list(map(eval, user_price_interval[symbol])))
@@ -145,7 +144,6 @@ async def user_signal_bybit(idt, bybit, binance):
         except Exception as e:
             logger2.error(e)
             continue
-    print(datetime.now())
 
 
 async def add_symbol():

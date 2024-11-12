@@ -30,14 +30,14 @@ except Exception as e:
 
 
 async def db_bybit(symbol):
-    async with aiosqlite.connect('database/database.db') as db:
+    with connect_db.cursor() as db:
         dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=60)
-        await db.execute('''DELETE FROM price WHERE date_create<?''', (dt,))
-        await db.commit()
-        await db.executemany('''INSERT INTO price(
+        db.execute('''DELETE FROM price WHERE date_create<%s''', (dt,))
+        connect_db.commit()
+        db.executemany('''INSERT INTO price(
         symbol, last_prise, date_create) VALUES (
-        ?, ?, datetime('now'))''', symbol)
-        await db.commit()
+        %s, %s, %s)''', symbol)
+        connect_db.commit()
 
 
 async def db_create_user(tg_id, username):
@@ -159,11 +159,11 @@ async def db_symbol_create(symbol_list):
 
 
 async def long_interval_user(interval_long):
-    async with aiosqlite.connect('database/database.db') as db:
+    with connect_db.cursor() as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
-        result = await db.execute('''SELECT symbol, last_prise FROM 
-        price WHERE date_create>? ORDER BY date_create''', (added_date, ))
-        result = await result.fetchall()
+        db.execute('''SELECT symbol, last_prise FROM 
+        price WHERE date_create>%s ORDER BY date_create''', (added_date, ))
+        result = db.fetchall()
         result_symbol = {}
         for key, value in result:
             result_symbol.setdefault(key, []).append(value)
