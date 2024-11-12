@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
 
 import requests
 from pybit.unified_trading import HTTP
@@ -40,12 +39,12 @@ async def market_price():
         bybit_symbol = []
         for dicts in data_bybit['result']['list']:
             if 'USDT' in dicts['symbol']:
-                bybit_data.append((dicts['symbol'], dicts['lastPrice'], dicts['openInterest'], datetime.now(timezone.utc)))
+                bybit_data.append((dicts['symbol'], dicts['lastPrice']))
                 bybit_symbol.append((dicts['symbol'], 1))
         for data in data_binance:
             if 'USDT' in data['symbol']:
                 if data['symbol'] not in bybit_symbol:
-                    binance_data.append((data['symbol'], data['price'], None, datetime.now(timezone.utc)))
+                    binance_data.append((data['symbol'], data['price']))
                 binance_symbol.append((data['symbol'], 0))
         data_list = bybit_data + binance_data
         result = (data_list, bybit_symbol, binance_symbol)
@@ -59,7 +58,7 @@ async def market_price():
 async def market_add_database():
     data = await market_price()
     await db_bybit(data[0])
-    await asyncio.sleep(5)
+    await asyncio.sleep(7)
 
 
 async def users_list():
