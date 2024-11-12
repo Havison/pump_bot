@@ -31,7 +31,7 @@ except Exception as e:
 
 async def db_bybit(symbol):
     async with aiosqlite.connect('database/database.db') as db:
-        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=120)
+        dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=60)
         await db.execute('''DELETE FROM price WHERE date_create<?''', (dt,))
         await db.commit()
         await db.executemany('''INSERT INTO price(
