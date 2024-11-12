@@ -126,6 +126,19 @@ async def db_setting_selection(tg_id):
         return result
 
 
+async def db_setting_selection_all():
+    with connect_db.cursor() as db:
+        db.execute('''SELECT * FROM users_settings''')
+        value = db.fetchall()
+        users = {}
+        key = ('quantity_pump', 'interval_pump', 'quantity_short', 'interval_short', 'quantity_pump_min',
+               'interval_pump_min', 'quantity_signal_pd', 'interval_signal_pd', 'quantity_signal_pm',
+               'interval_signal_pm', 'stop_signal', 'tg_id', 'binance', 'bybit')
+        for i in value:
+            users[i[11]] = dict(zip(key, i))
+        return users
+
+
 async def user_id():
     with connect_db.cursor() as db:
         db.execute('''SELECT tg_id, date_prem FROM users''')

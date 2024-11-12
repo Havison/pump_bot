@@ -5,8 +5,8 @@ import requests
 from pybit.unified_trading import HTTP
 from config_data.config import Config, load_config
 from database.database import (db_symbol_create, symbol_binance_bybit, long_interval_user, quantity,
-                               clear_quantity_signal, db_setting_selection, state_signal, db_bybit, list_premium,
-                               clear_premium)
+                               clear_quantity_signal, db_setting_selection_all, state_signal, db_bybit, list_premium,
+                               clear_premium, db_setting_selection)
 from handlers.user import message_bybit_binance, message_bybit, message_binance
 
 logger2 = logging.getLogger(__name__)
@@ -64,12 +64,20 @@ async def market_add_database():
 async def users_list():
     try:
         bybit, binance = await symbol_binance_bybit()
-        user = await list_premium()
-        user_iter = [i[0] for i in user]
-        while user_iter:
-            tg_id_user = [user_signal_bybit(user, bybit, binance) for user in user_iter[:10]]
-            await asyncio.gather(*tg_id_user)
-            user_iter = user_iter[10:]
+        users = await db_setting_selection_all()
+        users_price = {}
+        for idt, setting in users.items():
+            interval_pump = setting['interval_pump']
+            interval_dump = setting['interval_short']
+            interval_pump_min = setting['interval_pump_min']
+            user_price_interval = await long_interval_user(interval_pump)
+            user_price_interval_short = await long_interval_user(interval_dump)
+            user_price_interval_mini = await long_interval_user(interval_pump_min)
+            users_price[idt] = (user_price_interval, user_price_interval_short, user_price_interval_mini)
+
+        tg_id_user = [user_signal_bybit(idt, price, bybit, binance) for idt, price in users_price.items()]
+        await asyncio.gather(*tg_id_user)
+
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(2)
@@ -103,18 +111,18 @@ async def default_signal_user(idt, a, b, symbol, sml, quantity_interval, interva
                 await message_binance(idt, a, symbol, interval, q, sml, hours)
 
 
-async def user_signal_bybit(idt, bybit, binance):
+async def user_signal_bybit(idt, price, bybit, binance):
     setting = await db_setting_selection(idt)
+    quantity_signal_pd = setting['quantity_signal_pd']
+    quantity_signal_pm = setting['quantity_signal_pm']
     quantity_interval = setting['interval_signal_pd']
     quantity_interval_min = setting['interval_signal_pm']
     interval_pump = setting['interval_pump']
     interval_dump = setting['interval_short']
     interval_pump_min = setting['interval_pump_min']
-    quantity_signal_pd = setting['quantity_signal_pd']
-    quantity_signal_pm = setting['quantity_signal_pm']
-    user_price_interval = await long_interval_user(interval_pump)
-    user_price_interval_short = await long_interval_user(interval_dump)
-    user_price_interval_mini = await long_interval_user(interval_pump_min)
+    user_price_interval = price[0]
+    user_price_interval_short = price[1]
+    user_price_interval_mini = price[2]
     market_symbol = bybit + binance
     for symbol in set(market_symbol):
         try:
