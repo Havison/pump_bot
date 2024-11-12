@@ -133,6 +133,31 @@ async def user_id():
         return result
 
 
+async def symbol_binance_bybit():
+    with connect_db.cursor() as db:
+        db.execute('''SELECT symbol, market FROM symbol''')
+        result = db.fetchall()
+        bybit = []
+        binance = []
+        for i in result:
+            if i[1] == 1:
+                bybit.append(i[0])
+            else:
+                binance.append(i[0])
+        market = (bybit, binance)
+        return market
+
+
+async def db_symbol_create(symbol_list):
+    with connect_db.cursor() as db_sql:
+        for symbol in symbol_list:
+            db_sql.execute('''SELECT * FROM symbol WHERE symbol = %s AND market = %s''', (symbol[0], symbol[1]))
+            result = db_sql.fetchone()
+            if not result:
+                db_sql.execute('''INSERT INTO symbol(symbol, market) VALUES (%s, %s)''', (symbol[0], symbol[1]))
+        connect_db.commit()
+
+
 async def long_interval_user(interval_long):
     async with aiosqlite.connect('database/database.db') as db:
         added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
@@ -141,8 +166,7 @@ async def long_interval_user(interval_long):
         result = await result.fetchall()
         result_symbol = {}
         for key, value in result:
-            if key not in result_symbol:
-                result_symbol[key] = value
+            result_symbol.setdefault(key, []).append(value)
         return result_symbol
 
 

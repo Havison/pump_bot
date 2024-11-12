@@ -8,23 +8,23 @@ from aiogram.enums import ParseMode
 from handlers import user
 from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
-from services.signal_message import market_add_database, users_list
+from services.signal_message import market_add_database, users_list, add_symbol
 from cloud_pay.paymant import list_order
-from database.database import db_start
+from database.database import db_start, db_symbol_create
 
-import sentry_sdk
+# import sentry_sdk
 
 
-sentry_sdk.init(
-    dsn="https://833576debd9b254b6af3a73fda18b5cf@o4507817931571200.ingest.de.sentry.io/4507817934848080",
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for tracing.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-)
+# sentry_sdk.init(
+#     dsn="https://833576debd9b254b6af3a73fda18b5cf@o4507817931571200.ingest.de.sentry.io/4507817934848080",
+#     # Set traces_sample_rate to 1.0 to capture 100%
+#     # of transactions for tracing.
+#     traces_sample_rate=1.0,
+#     # Set profiles_sample_rate to 1.0 to profile 100%
+#     # of sampled transactions.
+#     # We recommend adjusting this value in production.
+#     profiles_sample_rate=1.0,
+# )
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,12 @@ async def countinues_task_user():
         await users_list()
 
 
+async def countinues_taks_symbol():
+    while True:
+        await add_symbol()
+        await asyncio.sleep(1200)
+
+
 async def main():
     # Конфигурируем логирование
     logging.basicConfig(
@@ -60,9 +66,11 @@ async def main():
     # Загружаем конфиг в переменную config
     config: Config = load_config('.env')
 
+    task_users = asyncio.create_task(countinues_task_user())
     task_bybit = asyncio.create_task(countinues_taks_bybit())
     task_paymant = asyncio.create_task(countinues_taks_pay())
-    task_users = asyncio.create_task(countinues_task_user())
+    task_symbols = asyncio.create_task(countinues_taks_symbol())
+
 
     # Инициализируем объект хранилища
     #storage = ...
