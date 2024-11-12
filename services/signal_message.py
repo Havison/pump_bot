@@ -40,12 +40,12 @@ async def market_price():
         bybit_symbol = []
         for dicts in data_bybit['result']['list']:
             if 'USDT' in dicts['symbol']:
-                bybit_data.append((dicts['symbol'], dicts['lastPrice'], datetime.now(timezone.utc)))
+                bybit_data.append((dicts['symbol'], dicts['lastPrice'], dicts['openInterest'], datetime.now(timezone.utc)))
                 bybit_symbol.append((dicts['symbol'], 1))
         for data in data_binance:
             if 'USDT' in data['symbol']:
                 if data['symbol'] not in bybit_symbol:
-                    binance_data.append((data['symbol'], data['price'], datetime.now(timezone.utc)))
+                    binance_data.append((data['symbol'], data['price'], None, datetime.now(timezone.utc)))
                 binance_symbol.append((data['symbol'], 0))
         data_list = bybit_data + binance_data
         result = (data_list, bybit_symbol, binance_symbol)
