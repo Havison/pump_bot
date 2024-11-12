@@ -59,7 +59,6 @@ async def market_price():
 async def market_add_database():
     data = await market_price()
     await db_bybit(data[0])
-    await clear_premium()
     await asyncio.sleep(5)
 
 
@@ -72,7 +71,6 @@ async def users_list():
             tg_id_user = [user_signal_bybit(user, bybit, binance) for user in user_iter[:10]]
             await asyncio.gather(*tg_id_user)
             user_iter = user_iter[10:]
-        print(datetime.now())
     except Exception as e:
         logger2.error(e)
         await asyncio.sleep(2)
@@ -119,6 +117,7 @@ async def user_signal_bybit(idt, bybit, binance):
     user_price_interval_short = await long_interval_user(interval_dump)
     user_price_interval_mini = await long_interval_user(interval_pump_min)
     market_symbol = bybit + binance
+    print(datetime.now())
     for symbol in market_symbol:
         try:
             max_price_pump = eval(user_price_interval[symbol][-1])
@@ -146,9 +145,11 @@ async def user_signal_bybit(idt, bybit, binance):
         except Exception as e:
             logger2.error(e)
             continue
+    print(datetime.now())
 
 
 async def add_symbol():
     symbol = await market_price()
     add = symbol[1] + symbol[2]
+    await clear_premium()
     await db_symbol_create(add)
