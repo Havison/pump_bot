@@ -117,28 +117,32 @@ async def user_signal_bybit(idt, bybit, binance):
     user_price_interval_mini = await long_interval_user(interval_pump_min)
     market_symbol = bybit + binance
     for symbol in market_symbol:
-        max_price_pump = max(list(map(eval, user_price_interval[symbol])))
-        min_price_pump = min(list(map(eval, user_price_interval[symbol])))
-        max_price_dump = max(list(map(eval, user_price_interval_short[symbol])))
-        min_price_dump = min(list(map(eval, user_price_interval_short[symbol])))
-        max_price_pump_min = max(list(map(eval, user_price_interval_mini[symbol])))
-        min_price_pump_min = min(list(map(eval, user_price_interval_mini[symbol])))
-        a_pump = (max_price_pump - min_price_pump) / max_price_pump * 100
-        a_dump = (min_price_dump - max_price_dump) / min_price_dump * 100
-        a_long = (max_price_pump_min - min_price_pump_min) / max_price_pump_min * 100
-        b_pump = setting['quantity_pump']
-        b_dump = setting['quantity_short']
-        b_long = setting['quantity_pump_min']
-        await asyncio.gather(default_signal_user(idt, a_pump, b_pump, symbol,
-                                                 '&#128994;', quantity_interval, interval_pump,
-                                                 1, bybit, binance, quantity_signal_pd),
-                             default_signal_user(idt, b_dump, a_dump, symbol,
-                                                 '&#128308;', quantity_interval, interval_dump,
-                                                 0, bybit, binance, quantity_signal_pd),
-                             default_signal_user(idt, a_long, b_long, symbol,
-                                                 '&#x1F4B9;', quantity_interval_min, interval_pump_min,
-                                                 2, bybit, binance, quantity_signal_pm)
-                             )
+        try:
+            max_price_pump = max(list(map(eval, user_price_interval[symbol])))
+            min_price_pump = min(list(map(eval, user_price_interval[symbol])))
+            max_price_dump = max(list(map(eval, user_price_interval_short[symbol])))
+            min_price_dump = min(list(map(eval, user_price_interval_short[symbol])))
+            max_price_pump_min = max(list(map(eval, user_price_interval_mini[symbol])))
+            min_price_pump_min = min(list(map(eval, user_price_interval_mini[symbol])))
+            a_pump = (max_price_pump - min_price_pump) / max_price_pump * 100
+            a_dump = (min_price_dump - max_price_dump) / min_price_dump * 100
+            a_long = (max_price_pump_min - min_price_pump_min) / max_price_pump_min * 100
+            b_pump = setting['quantity_pump']
+            b_dump = setting['quantity_short']
+            b_long = setting['quantity_pump_min']
+            await asyncio.gather(default_signal_user(idt, a_pump, b_pump, symbol,
+                                                     '&#128994;', quantity_interval, interval_pump,
+                                                     1, bybit, binance, quantity_signal_pd),
+                                 default_signal_user(idt, b_dump, a_dump, symbol,
+                                                     '&#128308;', quantity_interval, interval_dump,
+                                                     0, bybit, binance, quantity_signal_pd),
+                                 default_signal_user(idt, a_long, b_long, symbol,
+                                                     '&#x1F4B9;', quantity_interval_min, interval_pump_min,
+                                                     2, bybit, binance, quantity_signal_pm)
+                                 )
+        except Exception as e:
+            logger2.error(e)
+            continue
 
 
 async def add_symbol():
