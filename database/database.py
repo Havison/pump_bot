@@ -1,18 +1,7 @@
 import datetime
 import pymysql
-import aiosqlite
+
 from config_data.config import Config, load_config
-
-
-async def db_start():
-    async with aiosqlite.connect('database/database.db') as db:
-        async with db.execute('''
-            CREATE TABLE IF NOT EXISTS price (
-            symbol TEXT,
-            last_prise TEXT,
-            date_create TEXT
-            )
-            ''') as cursor: pass
 
 
 config: Config = load_config('.env')
@@ -26,17 +15,12 @@ try:
     connect_db = pymysql.connect(host=host, user=user, password=password, database=database)
     print('Connected to MySQL')
 
-
-
     async def db_bybit(symbol):
-        async with aiosqlite.connect('database/database.db') as db:
-            dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=120)
-            await db.execute('''DELETE FROM price WHERE date_create<?''', (dt,))
-            await db.commit()
-            await db.executemany('''INSERT INTO price(
-            symbol, last_prise, date_create) VALUES (
-            ?, ?, datetime('now'))''', symbol)
-            await db.commit()
+        with connect_db.cursor() as db:
+            db.executemany('''INSERT INTO price(
+            symbol, last_prise, open_interes, date_create) VALUES (
+            %s, %s, %s, %s)''', symbol)
+            connect_db.commit()
 
 
     async def db_create_user(tg_id, username):
@@ -125,19 +109,6 @@ try:
             return result
 
 
-    async def db_setting_selection_all():
-        with connect_db.cursor() as db:
-            db.execute('''SELECT * FROM users_settings''')
-            value = db.fetchall()
-            users = {}
-            key = ('quantity_pump', 'interval_pump', 'quantity_short', 'interval_short', 'quantity_pump_min',
-                   'interval_pump_min', 'quantity_signal_pd', 'interval_signal_pd', 'quantity_signal_pm',
-                   'interval_signal_pm', 'stop_signal', 'tg_id', 'binance', 'bybit')
-            for i in value:
-                users[i[11]] = dict(zip(key, i))
-            return users
-
-
     async def user_id():
         with connect_db.cursor() as db:
             db.execute('''SELECT tg_id, date_prem FROM users''')
@@ -168,14 +139,17 @@ try:
                 if not result:
                     db_sql.execute('''INSERT INTO symbol(symbol, market) VALUES (%s, %s)''', (symbol[0], symbol[1]))
             connect_db.commit()
+            dt = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=41)
+            db_sql.execute('''DELETE FROM price WHERE date_create<%s''', (dt,))
+            connect_db.commit()
 
 
     async def long_interval_user(interval_long):
-        async with aiosqlite.connect('database/database.db') as db:
+        with connect_db.cursor() as db:
             added_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=interval_long)
-            result = await db.execute('''SELECT symbol, last_prise FROM 
-            price WHERE date_create>? ORDER BY date_create''', (added_date, ))
-            result = await result.fetchall()
+            db.execute('''SELECT symbol, last_prise FROM 
+            price WHERE date_create>%s ORDER BY date_create''', (added_date, ))
+            result = db.fetchall()
             result_symbol = {}
             for key, value in result:
                 result_symbol.setdefault(key, []).append(value)
@@ -320,7 +294,6 @@ try:
                                        (tg_id, ))
             state_signal_user = db.fetchone()
             return state_signal_user
-
 except Exception as e:
-    print(e)
+
     connect_db = pymysql.connect(host=host, user=user, password=password, database=database)

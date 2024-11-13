@@ -10,7 +10,7 @@ from config_data.config import Config, load_config
 from keyboards.set_menu import set_main_menu
 from services.signal_message import market_add_database, users_list, add_symbol
 from cloud_pay.paymant import list_order
-from database.database import db_start, db_symbol_create
+
 
 # import sentry_sdk
 
@@ -43,8 +43,9 @@ async def countinues_taks_pay():
 
 
 async def countinues_task_user():
-    while True:
-        await users_list()
+    # while True:
+    #     await users_list()
+    pass
 
 
 async def countinues_taks_symbol():
@@ -54,16 +55,13 @@ async def countinues_taks_symbol():
 
 
 async def main():
-    # Конфигурируем логирование
     logging.basicConfig(
         level=logging.INFO,
         filename=f'{__name__}.log',
         format='%(filename)s:%(lineno)d #%(levelname)-8s '
                '[%(asctime)s] - %(name)s - %(message)s')
-    # Выводим в консоль информацию о начале запуска бота
     logger.info('Starting bot')
 
-    # Загружаем конфиг в переменную config
     config: Config = load_config('.env')
 
     task_users = asyncio.create_task(countinues_task_user())
@@ -71,38 +69,18 @@ async def main():
     task_paymant = asyncio.create_task(countinues_taks_pay())
     task_symbols = asyncio.create_task(countinues_taks_symbol())
 
-
-    # Инициализируем объект хранилища
-    #storage = ...
-
-    # Инициализируем бот и диспетчер
     bot = Bot(
         token=config.tg_bot.token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
-
     await set_main_menu(bot)
-    await db_start()
-
 
     dp.include_router(user.router)
 
-
-
-    # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=[], timeout=60)
 
-
-
-
 asyncio.run(main())
-
-
-
-# Регистрируем миддлвари
-#logger.info('Подключаем миддлвари')
-# ...
 
 
