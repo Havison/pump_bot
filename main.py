@@ -43,9 +43,8 @@ async def countinues_taks_pay():
 
 
 async def countinues_task_user():
-    # while True:
-    #     await users_list()
-    pass
+    while True:
+        await users_list()
 
 
 async def countinues_taks_symbol():
